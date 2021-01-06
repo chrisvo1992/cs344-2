@@ -32,6 +32,8 @@ struct movie* createMovie(char* line)
 	// movie title
 	char* token = strtok_r(line, ",", &savePtr);
 	currMovie->title = calloc(strlen(token) + 1, sizeof(char));
+	printf("testing line 35\n");
+	printf("%s",currMovie->title);
 	strcpy(currMovie->title, token);
 
 	// movie year
@@ -54,25 +56,35 @@ struct movie* createMovie(char* line)
 	return currMovie;
 }
 
-struct movie *processFile(char* filePath)
+struct movie *processFile(const char* filePath)
+//struct movie *processFile()
 {
 	FILE* movieFile = fopen(filePath, "r");
+	//FILE* movieFile = fopen("movie_list.txt", "r");
+
+	if (!movieFile)
+	{
+		printf("oh no\n");
+		perror("Failed to open file");
+		return EXIT_FAILURE;
+	}
+
+	printf("we crazy and we out here");
 
 	size_t len = 0;
-	//ssize_t read;
-	char* read = NULL;
+	ssize_t read;
 	//char* currLine = malloc(sizeof(char));
 	//char** currLine = malloc(len * sizeof(char));
 	char* currLine = NULL;
 	struct movie* head = NULL;
 	struct movie* tail = NULL;
 
-	read = fgets(&currLine, 100, movieFile);
-	printf("%s\n", currLine);
-
-	//while ((read = getline(currLine, &len, movieFile)) != -1)
-	/*{
-		printf("%s\n", currLine);
+    	//int test = 0;
+	//test  = fscanf(movieFile, "%s");
+	
+	while ((read = getline(&currLine, &len, movieFile)) != -1)
+	{
+		//printf("%s\n", currLine);
 		struct movie *newNode = createMovie(currLine);
 
 		if (head == NULL)
@@ -85,7 +97,7 @@ struct movie *processFile(char* filePath)
 			tail->next = newNode;
 			tail = newNode;
 		}
-	}*/
+	}
 	free(currLine);
 	fclose(movieFile);
 	return head;
@@ -112,13 +124,14 @@ void printMovieList(struct movie* list)
 int main(int argc, char *argv[])
 {
 	printf("movie list started\n");
-	//if (argc < 2)
-	//{
-	//	printf("Provide a file to process.");
-	//	return EXIT_FAILURE;
-	//}
-	struct movie* list = processFile("movie_list.txt");
-	//struct movie* list = processFile(argv[1]);
+	if (argc < 2)
+	{
+		printf("Provide a file to process.");
+		return EXIT_FAILURE;
+	}
+
+	//struct movie* list = processFile();
+	struct movie* list = processFile(argv[1]);
 	printMovieList(list);
 	
 	return 0;

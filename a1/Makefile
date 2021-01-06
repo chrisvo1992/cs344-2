@@ -5,7 +5,7 @@
 # http://nuclear.mutantstargoat.com/articles/make/
 
 CC = gcc
-CFLAGS := -std=c99
+CFLAGS := -std=gnu99
 
 BINDIR = .
 #exe_file = $(BINDIR)/$(shell basename "${PWD}")
