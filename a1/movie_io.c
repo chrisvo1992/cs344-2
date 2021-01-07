@@ -162,6 +162,8 @@ void showByYear(struct movie *list)
 	{
 		printf("No data about movies exists for that year.\n");
 	}
+	
+	free(str);
 }
 
 void showByRating()
