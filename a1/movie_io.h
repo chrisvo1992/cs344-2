@@ -21,10 +21,11 @@ void printMovieList(struct movie*);
 
 void printMovieMenu();
 
-void printMenuChoice(int, struct movie*);
-
-int getMenuChoice();
 void showByYear(struct movie*);
 void showByRating(struct movie*);
 void showByLanguage(struct movie*);
+
+void printMenuChoice(int, struct movie*);
+
+int getMenuChoice();
 

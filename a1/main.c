@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	{
 		printMovieMenu();
 		value = getMenuChoice();
-		displayMenuChoice(value, list);
+		printMenuChoice(value, list);
 	}
 
 	return 0;

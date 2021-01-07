@@ -104,7 +104,7 @@ struct movie *processFile(const char* filePath)
 	return head;
 }
 
-void printMovie(struct movie* aMovie)
+void printMovie(struct movie *aMovie)
 {
 	printf("%s, %s, %s, %s\n",
 		aMovie->title,
@@ -113,7 +113,12 @@ void printMovie(struct movie* aMovie)
 		aMovie->rating);
 }
 
-void printMovieList(struct movie* list)
+void printByTitle(struct movie *aMovie)
+{
+	printf("%s\n", aMovie->title);
+}
+
+void printMovieList(struct movie *list)
 {
 	while (list != NULL)
 	{
@@ -130,6 +135,45 @@ void printMovieMenu()
 	printf("   movies in a specified language\n");
 	printf("4. Exit from the program\n\n");
 }
+
+void showByYear(struct movie *list)
+{
+	int value = 0;
+	int resultCount = 0;
+	char *str = malloc(4 * sizeof(char));
+
+	printf("\nEnter the year for which you want to see movies: ");
+
+	scanf("%s", str);
+
+	value = atoi(str);
+
+	while (list != NULL)
+	{
+		if (atoi(list->year) == value)
+		{
+			printByTitle(list);
+			resultCount++;
+		}
+		list = list->next;
+	}
+
+	if (resultCount == 0)
+	{
+		printf("No data about movies exists for that year.\n");
+	}
+}
+
+void showByRating()
+{
+	printf("\nshow by rating\n");
+}
+
+void showByLanguage()
+{
+	printf("\nshow by language\n");
+}
+
 
 int getMenuChoice()
 {
@@ -167,12 +211,6 @@ int getMenuChoice()
 
 void printMenuChoice(int val, struct movie *list)
 {
-	while (list != NULL)
-	{
-		//printMovieList(list);
-		list = list->next;
-	}
-
 	switch(val)
 	{
 		case 1: showByYear(list); break;
@@ -182,47 +220,4 @@ void printMenuChoice(int val, struct movie *list)
 	}
 }
 
-void showByYear(struct movie *list)
-{
-	int value = 0;
-	int resultCount = 0;
-	char *str = malloc(4 * sizeof(char));
 
-	printf("\nEnter the year for which\n");
-	printf("you want to see movies: ");
-
-	scanf("%s", str);
-
-	value = atoi(str);
-
-	while (list != NULL)
-	{
-		//if (atoi(list->year) == value)
-		//{
-		printMovie(list);
-			//printByTitle(list);
-			resultCount++;
-		//}
-		list = list->next;
-	}
-
-	if (resultCount == 0)
-	{
-		printf("No data about movies exists for that year.\n");
-	}
-}
-
-void printByTitle(struct movie *aMovie)
-{
-	printf("%s\n", aMovie->title);
-}
-
-void showByRating()
-{
-	printf("\nshow by rating\n");
-}
-
-void showByLanguage()
-{
-	printf("\nshow by language\n");
-}
