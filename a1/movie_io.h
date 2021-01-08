@@ -9,21 +9,20 @@ struct movie
 };
 
 
-struct movie* createMovie(char*);
+struct movie* _createMovie(char*);
 
 struct movie* processFile(const char*);
 
-void printMovie(struct movie*);
+void _printMovie(struct movie*);
+void _printByTitle(struct movie*);
 
-void printByTitle(struct movie*);
-
-void printMovieList(struct movie*);
+void _printMovieList(struct movie*);
 
 void printMovieMenu();
 
-void showByYear(struct movie*);
-void showByRating(struct movie*);
-void showByLanguage(struct movie*);
+void _showByYear(struct movie*);
+void _showByRating(struct movie*);
+void _showByLanguage(struct movie*);
 
 void printMenuChoice(int, struct movie*);
 

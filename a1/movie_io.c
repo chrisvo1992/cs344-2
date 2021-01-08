@@ -28,7 +28,7 @@ struct movie
 	struct movie* next;
 };
 
-struct movie* createMovie(char* line)
+struct movie* _createMovie(char* line)
 {
 	struct movie *currMovie = malloc(sizeof(struct movie));
 
@@ -85,7 +85,7 @@ struct movie *processFile(const char* filePath)
 		}
 		else 
 		{
-			struct movie *newNode = createMovie(currLine);
+			struct movie *newNode = _createMovie(currLine);
 
 			if (head == NULL)
 			{
@@ -104,7 +104,7 @@ struct movie *processFile(const char* filePath)
 	return head;
 }
 
-void printMovie(struct movie *aMovie)
+void _printMovie(struct movie *aMovie)
 {
 	printf("%s, %s, %s, %s\n",
 		aMovie->title,
@@ -113,16 +113,16 @@ void printMovie(struct movie *aMovie)
 		aMovie->rating);
 }
 
-void printByTitle(struct movie *aMovie)
+void _printByTitle(struct movie *aMovie)
 {
 	printf("%s\n", aMovie->title);
 }
 
-void printMovieList(struct movie *list)
+void _printMovieList(struct movie *list)
 {
 	while (list != NULL)
 	{
-		printMovie(list);
+		_printMovie(list);
 		list = list->next;
 	}
 }
@@ -136,7 +136,7 @@ void printMovieMenu()
 	printf("4. Exit from the program\n\n");
 }
 
-void showByYear(struct movie *list)
+void _showByYear(struct movie *list)
 {
 	int value = 0;
 	int resultCount = 0;
@@ -152,7 +152,7 @@ void showByYear(struct movie *list)
 	{
 		if (atoi(list->year) == value)
 		{
-			printByTitle(list);
+			_printByTitle(list);
 			resultCount++;
 		}
 		list = list->next;
@@ -166,12 +166,25 @@ void showByYear(struct movie *list)
 	free(str);
 }
 
-void showByRating()
+void _showByRating(struct movie *list)
 {
-	printf("\nshow by rating\n");
+	//create a linked list of movies by each year
+
+	//if a movie matches the year for an existing
+	//movie in the linked list, compare the rating.
+	//if the rating is better, swap the movies.
+	
+
+	//once all movies have been read, print the list
+
+	while (list != NULL) 
+	{
+		struct movie *aMovie = malloc(sizeof(struct movie));
+	}
+
 }
 
-void showByLanguage()
+void _showByLanguage()
 {
 	printf("\nshow by language\n");
 }
@@ -215,9 +228,9 @@ void printMenuChoice(int val, struct movie *list)
 {
 	switch(val)
 	{
-		case 1: showByYear(list); break;
-		case 2: showByRating(); break;
-		case 3: showByLanguage(); break; 	
+		case 1: _showByYear(list); break;
+		case 2: _showByRating(); break;
+		case 3: _showByLanguage(); break; 	
 		default: break;
 	}
 }
