@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include "movie.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -18,15 +19,6 @@
 // https://en.cppreference.com/w/c/memory/calloc
 // https://linux.die.net/man/3/getline
 
-
-struct movie
-{
-	char* title;
-	char* year;
-	char* languages;
-	char* rating;
-	struct movie* next;
-};
 
 struct movie* _createMovie(char* line)
 {
@@ -229,7 +221,7 @@ void printMenuChoice(int val, struct movie *list)
 	switch(val)
 	{
 		case 1: _showByYear(list); break;
-		case 2: _showByRating(); break;
+		case 2: _showByRating(list); break;
 		case 3: _showByLanguage(); break; 	
 		default: break;
 	}

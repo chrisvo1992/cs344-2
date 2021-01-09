@@ -35,6 +35,8 @@ int main(int argc, char *argv[])
 		value = getMenuChoice();
 		printMenuChoice(value, list);
 	}
+	
+	sort(list);
 
 	return 0;
 }

@@ -1,1 +1,1 @@
-build/main.o: main.c movie_io.h
+build/main.o: main.c movie_io.h movie.h
