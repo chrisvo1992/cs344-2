@@ -64,10 +64,13 @@ struct movie *processFile(const char* filePath)
 	}
 
 	size_t len = 0;
+	unsigned int count = 0;
 	ssize_t read;
 	char* currLine = NULL;
 	struct movie* head = NULL;
 	struct movie* tail = NULL;
+
+	read = getline(&currLine, &len, movieFile);
 
 	while ((read = getline(&currLine, &len, movieFile)) != -1)
 	{
@@ -77,6 +80,7 @@ struct movie *processFile(const char* filePath)
 		}
 		else 
 		{
+			
 			struct movie *newNode = _createMovie(currLine);
 
 			if (head == NULL)
