@@ -101,6 +101,19 @@ struct movie *processFile(const char* filePath)
 	return head;
 }
 
+int findStr(char const *str, char const *subStr)
+{
+	char *pos = strstr(str, subStr);
+	if (pos)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}	
+}
+
 void _printMovie(struct movie *aMovie)
 {
 	printf("%s, %d, %s, %f\n",
@@ -174,10 +187,10 @@ void _showByRating(struct movie *list)
 	struct movie *headRef = list;
 
 	newNode = malloc(sizeof(struct movie));
-	newNode->title = malloc(sizeof(strlen(list->title)));
+	newNode->title = list->title;
 	strcpy(newNode->title, list->title);
 	newNode->year = list->year;
-	newNode->languages = malloc(sizeof(strlen(list->languages)));
+	newNode->languages = list->languages;
 	strcpy(newNode->languages, list->languages);
 	newNode->rating = list->rating;
 	newNode->next = 0;
@@ -195,17 +208,14 @@ void _showByRating(struct movie *list)
 			tempYear = newNode;		
 			newNode = malloc(sizeof(struct movie));
 			tempYear->next = newNode;
-			newNode->title = malloc(sizeof(strlen(list->title)));
-			strcpy(newNode->title, list->title);
+			newNode->title = list->title;
 			newNode->year = list->year;
-			newNode->languages = malloc(sizeof(strlen(list->languages)));
-			strcpy(newNode->languages, list->languages);
+			newNode->languages = list->languages;
 			newNode->rating = list->rating;
 			newNode->next = 0;
 		}
 		list = list->next;
 	}
-
 	tempYear->next = newNode;
 	newNode->next = 0;
 	list = headRef;
@@ -216,9 +226,8 @@ void _showByRating(struct movie *list)
 	//
 	// if the list rating is hight, swap values.
 	//
-	printf("\n");
-	///*
-	while (list != 0)
+	
+	while (uniqueYearList != 0)
 	{
 		// while the years are the same, 
 		// compare the ratings.
@@ -233,19 +242,15 @@ void _showByRating(struct movie *list)
 			}
 			list = list->next;
 		}
-		if (uniqueYearList->next != 0)
-		{
-			uniqueYearList = uniqueYearList->next;
-		}
-		list = list->next;
+
+		uniqueYearList = uniqueYearList->next;
 	}
-	//*/
 	
 	uniqueYearList = uniqueListRef;
 
 	while (uniqueYearList != 0) 
 	{
-		printf("\n%d %2f %s", 
+		printf("%d %2f %s\n", 
 			uniqueYearList->year,
 			uniqueYearList->rating,
 			uniqueYearList->title);
@@ -254,13 +259,32 @@ void _showByRating(struct movie *list)
 
 	printf("\n");
 
-	// only freeing one node, iterate over the list to free mem	
 	free(uniqueYearList);
 }
 
-void _showByLanguage()
+void _showByLanguage(struct movie *list)
 {
-	printf("\nshow by language\n");
+	char lang[20];
+	unsigned int matchCount = 0;
+	
+	printf("\nEnter the language for which you want to see movies: ");
+	scanf("%s", lang);
+
+	while (list != 0)
+	{
+		//printf("\n%s\n", list->languages);		
+		if (findStr(list->languages, lang))
+		{
+			printf("%d %s\n", list->year, list->title);	
+			matchCount++;
+		}
+		list = list->next;
+	}
+
+	if (matchCount == 0)
+	{
+		printf("\nNo movies exist with that langauge.\n");
+	}
 }
 
 
@@ -304,7 +328,7 @@ void printMenuChoice(int val, struct movie *list)
 	{
 		case 1: _showByYear(list); break;
 		case 2: _showByRating(list); break;
-		case 3: _showByLanguage(); break; 	
+		case 3: _showByLanguage(list); break; 	
 		default: break;
 	}
 }
