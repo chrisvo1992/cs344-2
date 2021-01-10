@@ -12,7 +12,10 @@ void _printMovieList(struct movie*);
 void printMovieMenu();
 
 void _showByYear(struct movie*);
+
+// shows highest rating for each unique year
 void _showByRating(struct movie*);
+
 void _showByLanguage(struct movie*);
 
 void printMenuChoice(int, struct movie*);

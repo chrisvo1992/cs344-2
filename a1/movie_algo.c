@@ -1,76 +1,72 @@
-
 #include "movie_algo.h"
 
-void sort(struct movie *list)
+struct movie*  mergeSort(struct movie *head)
 {
-	unsigned int totalCount = 0;
-	unsigned int countA = 0;
-	unsigned int countB = 0;
-	struct movie *listA = list;
+
+	// check if there is only one node in the linked list
+	if (head == 0 || head->next == 0)	
+	{
+		return head;
+	}
+
+	// create a fast and slow pointer that will divide
+	// the linked list into two halves.
+	struct movie *slow = head;
+	struct movie *fast = head;
+	struct movie *temp = head;
+	struct movie *listA = 0;
 	struct movie *listB = 0;
 
-	// count the number of movies in the existing linked list
-	while (listA != 0)
+	while (fast != 0) 
 	{
-		listA = listA->next;
-		totalCount++;
-	}
-	// reset a
-	listA = list;
-	// get the second half of the linked list 
-	while (countA < totalCount / 2)
-	{
-		listA = listA->next;	
-		countA++;
-	}
-	countB = totalCount - countA;
-	listB = listA;
-	// reset a, again
-	listA = list;
+		fast = fast->next;
+		if (fast != 0)
+		{
+			temp = slow;
+			slow = slow->next;
+			fast = fast->next;
+		}
+	}	
 
-	test(listA,listB,countA, countB);
-	// list = the whole list
-	// listA = first half of linked list
-	// listB = second half of linked list
-	// NOTE - listB will always have a greater count when list size
-	// 	is odd.
-	//mergeSort(list, listA, listB); 
+	temp->next = 0;
+
+	listA = mergeSort(head);
+	listB = mergeSort(slow);
 	
+	return merge(listA, listB);
 }
 
-void mergeSort(struct movie* list, struct movie* a, struct movie* b, unsigned int sizeA, unsigned int sizeB)
+struct movie* merge(struct movie *sideA, struct movie *sideB)
 {
-	/*if (sizeA < sizeB) 
-	{
-	}
-	*/	
-}
+	struct movie *sortedTemp = malloc(sizeof(struct movie));
+	struct movie *currentNode = sortedTemp; 
+	
+	while (sideA != 0 && sideB != 0)
+	{	
+		if (atoi(sideA->year) < atoi(sideB->year))
+		{
+			currentNode->next = sideA;
+			sideA = sideA->next;
+		}
+		else 
+		{
+			currentNode->next = sideB;
+			sideB = sideB->next;
+		}
 
-void test(struct movie *left, struct movie *right, int sizeA, int sizeB)
-{
-	printf("left\n");
-	int i = 0;
-	while (i < sizeA) 
-	{
-		++i;
-		printf("%i\n", i);
-		printf(left->year);
-		printf(left->rating);
-		printf(left->title);
-		printf("\n");
-		left = left->next;
-	}		
-	i = 0;
-	printf("\nright: \n");
-	while (i < sizeB) 
-	{
-		++i;
-		printf("%i\n", i);
-		printf(right->year);
-		printf(right->rating);
-		printf(right->title);
-		printf("\n");
-		right = right->next;
+		currentNode = currentNode->next;
 	}
-}
+	
+	if (sideA != 0)
+	{
+		currentNode->next = sideA;
+		sideA = sideA->next;
+	}
+	if (sideB != 0)
+	{
+		currentNode->next = sideB;
+		sideB = sideB->next;
+	}	
 
+	return sortedTemp->next;
+}

@@ -6,3 +6,9 @@ struct movie
 	char* rating;
 	struct movie* next;
 };
+
+struct node
+{
+	int val;
+	struct node *next;
+};

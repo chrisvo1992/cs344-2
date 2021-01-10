@@ -137,47 +137,83 @@ void _showByYear(struct movie *list)
 	int value = 0;
 	int resultCount = 0;
 	char *str = malloc(4 * sizeof(char));
-
-	printf("\nEnter the year for which you want to see movies: ");
-
-	scanf("%s", str);
-
-	value = atoi(str);
-
-	while (list != NULL)
-	{
-		if (atoi(list->year) == value)
-		{
-			_printByTitle(list);
-			resultCount++;
-		}
-		list = list->next;
-	}
-
-	if (resultCount == 0)
-	{
-		printf("No data about movies exists for that year.\n");
-	}
 	
-	free(str);
+	if (0 == (str = malloc(4 * sizeof(char))))
+	{
+		printf("\nunable to allocate memory\n");
+	}
+	else 
+	{
+		printf("\nEnter the year for which you want to see movies: ");
+
+		scanf("%s", str);
+
+		value = atoi(str);
+
+		while (list != NULL)
+		{
+			if (atoi(list->year) == value)
+			{
+				_printByTitle(list);
+				resultCount++;
+			}
+			list = list->next;
+		}
+
+		if (resultCount == 0)
+		{
+			printf("No data about movies exists for that year.\n");
+		}
+	
+		free(str);
+	}
 }
 
 void _showByRating(struct movie *list)
 {
-	//create a linked list of movies by each year
+	// read the unique years and create a list of those years,
+	// assigning the first value to each year node.
+	// Note: the list is sorted in asc order. 
+	struct node *newYear = 0;
+	struct node *tempYear = 0;
+	struct node *uniqueYearList = 0; 
 
-	//if a movie matches the year for an existing
-	//movie in the linked list, compare the rating.
-	//if the rating is better, swap the movies.
-	
+	newNode = malloc(sizeof(struct movie));
+	newNode->year =list->year;
+	newNode->next = 0;
+	uniqueYearList = newNode;
 
-	//once all movies have been read, print the list
-
-	while (list != NULL) 
+	while (list != 0)
 	{
-		struct movie *aMovie = malloc(sizeof(struct movie));
+		if (atoi(list->year) == atoi(newNode->year))
+		{
+			list = list->next;
+		}
+		else
+		{
+			tempYear = newNode;		
+			newNode = malloc(sizeof(struct movie));
+			tempYear->next = newNode;
+			newNode->year = list->year;	
+		}
 	}
-
+	tempYear->next = 0;
+	//
+	// while checking the year and change of year, compare the rating
+	// of each year in list with the rating of each unique year.
+	//
+	// if the list rating is hight, swap values.
+	//
+	while (uniqueYearList != 0)
+	{
+		if (atoi(uniqueYearList->year) < atoi(list->year))
+		{
+		printf("%d\n", uniqueYearList->val);	
+		uniqueYearList = uniqueYearList->next;
+		}
+	} 
+	
+	free(uniqueYearList);
 }
 
 void _showByLanguage()
