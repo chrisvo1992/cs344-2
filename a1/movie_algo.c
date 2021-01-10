@@ -43,7 +43,7 @@ struct movie* merge(struct movie *sideA, struct movie *sideB)
 	
 	while (sideA != 0 && sideB != 0)
 	{	
-		if (atoi(sideA->year) < atoi(sideB->year))
+		if (sideA->year < sideB->year)
 		{
 			currentNode->next = sideA;
 			sideA = sideA->next;

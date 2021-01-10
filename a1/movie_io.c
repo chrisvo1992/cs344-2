@@ -34,8 +34,9 @@ struct movie* _createMovie(char* line)
 
 	// movie year
 	token = strtok_r(NULL, ",", &savePtr);
-	currMovie->year = calloc(strlen(token) + 1, sizeof(char));
-	strcpy(currMovie->year, token);
+	//currMovie->year = calloc(strlen(token) + 1, sizeof(char));
+	//strcpy(currMovie->year, token);
+	currMovie->year = atoi(token);
 
 	// movie languages
 	token = strtok_r(NULL, ",", &savePtr);
@@ -44,8 +45,9 @@ struct movie* _createMovie(char* line)
 	
 	// movie rating
 	token = strtok_r(NULL, "\n", &savePtr);
-	currMovie->rating = calloc(strlen(token) + 1, sizeof(char));
-	strcpy(currMovie->rating, token);
+	//currMovie->rating = calloc(strlen(token) + 1, sizeof(char));
+	//strcpy(currMovie->rating, token);
+	currMovie->rating = atof(token);
 
 	currMovie->next = NULL;
 	
@@ -64,7 +66,6 @@ struct movie *processFile(const char* filePath)
 	}
 
 	size_t len = 0;
-	unsigned int count = 0;
 	ssize_t read;
 	char* currLine = NULL;
 	struct movie* head = NULL;
@@ -102,7 +103,7 @@ struct movie *processFile(const char* filePath)
 
 void _printMovie(struct movie *aMovie)
 {
-	printf("%s, %s, %s, %s\n",
+	printf("%s, %d, %s, %f\n",
 		aMovie->title,
 		aMovie->year,
 		aMovie->languages,
@@ -136,36 +137,28 @@ void _showByYear(struct movie *list)
 {
 	int value = 0;
 	int resultCount = 0;
-	char *str = malloc(4 * sizeof(char));
-	
-	if (0 == (str = malloc(4 * sizeof(char))))
+	//char *str = malloc(4 * sizeof(char));
+	int input;	
+
+	printf("\nEnter the year for which you want to see movies: ");
+
+	scanf("%d", &input);
+
+	value = input;
+
+	while (list != NULL)
 	{
-		printf("\nunable to allocate memory\n");
+		if (list->year == value)
+		{
+			_printByTitle(list);
+			resultCount++;
+		}
+		list = list->next;
 	}
-	else 
+
+	if (resultCount == 0)
 	{
-		printf("\nEnter the year for which you want to see movies: ");
-
-		scanf("%s", str);
-
-		value = atoi(str);
-
-		while (list != NULL)
-		{
-			if (atoi(list->year) == value)
-			{
-				_printByTitle(list);
-				resultCount++;
-			}
-			list = list->next;
-		}
-
-		if (resultCount == 0)
-		{
-			printf("No data about movies exists for that year.\n");
-		}
-	
-		free(str);
+		printf("No data about movies exists for that year.\n");
 	}
 }
 
@@ -174,18 +167,26 @@ void _showByRating(struct movie *list)
 	// read the unique years and create a list of those years,
 	// assigning the first value to each year node.
 	// Note: the list is sorted in asc order. 
-	struct node *newYear = 0;
-	struct node *tempYear = 0;
-	struct node *uniqueYearList = 0; 
+	struct movie *newNode = 0;
+	struct movie *tempYear = 0;
+	struct movie *uniqueYearList = 0; 
+	struct movie *uniqueListRef = 0;
+	struct movie *headRef = list;
 
 	newNode = malloc(sizeof(struct movie));
-	newNode->year =list->year;
+	newNode->title = malloc(sizeof(strlen(list->title)));
+	strcpy(newNode->title, list->title);
+	newNode->year = list->year;
+	newNode->languages = malloc(sizeof(strlen(list->languages)));
+	strcpy(newNode->languages, list->languages);
+	newNode->rating = list->rating;
 	newNode->next = 0;
 	uniqueYearList = newNode;
+	uniqueListRef = uniqueYearList;
 
 	while (list != 0)
 	{
-		if (atoi(list->year) == atoi(newNode->year))
+		if (list->year == newNode->year)
 		{
 			list = list->next;
 		}
@@ -194,25 +195,81 @@ void _showByRating(struct movie *list)
 			tempYear = newNode;		
 			newNode = malloc(sizeof(struct movie));
 			tempYear->next = newNode;
-			newNode->year = list->year;	
+			newNode->title = malloc(sizeof(strlen(list->title)));
+			strcpy(newNode->title, list->title);
+			newNode->year = list->year;
+			newNode->languages = malloc(sizeof(strlen(list->languages)));
+			strcpy(newNode->languages, list->languages);
+			newNode->rating = list->rating;
+			newNode->next = 0;
 		}
+		list = list->next;
 	}
-	tempYear->next = 0;
+
+	tempYear->next = newNode;
+	newNode->next = 0;
+	list = headRef;
+	
 	//
 	// while checking the year and change of year, compare the rating
 	// of each year in list with the rating of each unique year.
 	//
 	// if the list rating is hight, swap values.
 	//
-	while (uniqueYearList != 0)
+	printf("\n");
+	///*
+	while (list != 0)
 	{
-		if (atoi(uniqueYearList->year) < atoi(list->year))
+		// while the years are the same, 
+		// compare the ratings.
+		while (list->year == uniqueYearList->year)
 		{
-		printf("%d\n", uniqueYearList->val);	
-		uniqueYearList = uniqueYearList->next;
+			
+			if (list->rating > uniqueYearList->rating)
+			{
+				if (uniqueYearList->title == 0)
+				{
+				uniqueYearList->title = malloc(sizeof(strlen(list->title) + 1));
+				strcpy(uniqueYearList->title, list->title);
+				uniqueYearList->year = list->year;			
+				uniqueYearList->languages = malloc(sizeof(strlen(list->languages) + 1));
+				strcpy(uniqueYearList->languages, list->languages);
+				uniqueYearList->rating = list->rating;
+				}
+				else		
+				{
+					strcpy(uniqueYearList->title, list->title);
+					uniqueYearList->year = list->year;	
+					strcpy(uniqueYearList->languages, list->languages);
+					uniqueYearList->rating = list->rating;
+				}
+			}
+			list = list->next;
+			if (list->year > uniqueYearList->year)
+			{
+				uniqueYearList = uniqueYearList->next;	
+			}
 		}
+		list = list->next;
+		uniqueYearList = uniqueYearList->next;
 	} 
+	//*/
 	
+	uniqueYearList = uniqueListRef;
+
+	while (uniqueYearList != 0) 
+	{
+		printf("\n%d %2f %s", 
+			uniqueYearList->year,
+			uniqueYearList->rating,
+			uniqueYearList->title);
+		uniqueYearList = uniqueYearList->next;
+	}
+
+	printf("\n");
+
+
+	// only freeing one node, iterate over the list to free mem	
 	free(uniqueYearList);
 }
 

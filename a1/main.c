@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "movie_io.h" 
 
 /****DESCRIPTION****/
@@ -40,7 +42,7 @@ int main(int argc, char *argv[])
 	///*
 	while (sortedList != 0)
 	{
-		printf("%s\n",sortedList->year);
+		printf("%d\n",sortedList->year);
 		sortedList = sortedList->next;
 	}
 	//*/
