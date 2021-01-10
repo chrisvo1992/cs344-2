@@ -224,35 +224,21 @@ void _showByRating(struct movie *list)
 		// compare the ratings.
 		while (list->year == uniqueYearList->year)
 		{
-			
 			if (list->rating > uniqueYearList->rating)
 			{
-				if (uniqueYearList->title == 0)
-				{
-				uniqueYearList->title = malloc(sizeof(strlen(list->title) + 1));
-				strcpy(uniqueYearList->title, list->title);
+				uniqueYearList->title = list->title;
 				uniqueYearList->year = list->year;			
-				uniqueYearList->languages = malloc(sizeof(strlen(list->languages) + 1));
-				strcpy(uniqueYearList->languages, list->languages);
+				uniqueYearList->languages = list->languages;
 				uniqueYearList->rating = list->rating;
-				}
-				else		
-				{
-					strcpy(uniqueYearList->title, list->title);
-					uniqueYearList->year = list->year;	
-					strcpy(uniqueYearList->languages, list->languages);
-					uniqueYearList->rating = list->rating;
-				}
 			}
 			list = list->next;
-			if (list->year > uniqueYearList->year)
-			{
-				uniqueYearList = uniqueYearList->next;	
-			}
+		}
+		if (uniqueYearList->next != 0)
+		{
+			uniqueYearList = uniqueYearList->next;
 		}
 		list = list->next;
-		uniqueYearList = uniqueYearList->next;
-	} 
+	}
 	//*/
 	
 	uniqueYearList = uniqueListRef;
@@ -267,7 +253,6 @@ void _showByRating(struct movie *list)
 	}
 
 	printf("\n");
-
 
 	// only freeing one node, iterate over the list to free mem	
 	free(uniqueYearList);
