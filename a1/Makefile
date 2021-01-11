@@ -1,14 +1,14 @@
 # Comprehensive Makefile
-# This will automatically compile any .cpp files in the current directory.
+# This will automatically compile any .c files in the current directory.
 # Some of the syntax was adapted from:
 # https://gist.github.com/Wenchy/64db1636845a3da0c4c7
 # http://nuclear.mutantstargoat.com/articles/make/
 
 CC = gcc
-CFLAGS := -std=gnu99
+CFLAGS = --std=gnu99
+SRCEXT = c
 
 BINDIR = .
-#exe_file = $(BINDIR)/$(shell basename "${PWD}")
 exe_file = $(BINDIR)/movies
 
 # Handle debug case
@@ -21,7 +21,6 @@ endif
 
 SRCDIR = .
 BUILDDIR = build
-SRCEXT = c
 SOURCES = $(shell find $(SRCDIR) -type f -name "*.$(SRCEXT)")
 OBJECTS = $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 DEP = $(OBJECTS:.o=.d)

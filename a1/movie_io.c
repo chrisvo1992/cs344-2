@@ -1,8 +1,7 @@
-#define _GNU_SOURCE
-#include "movie.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "movie_io.h"
 
 /****DESCRIPTION****/
 // - read a csv file as an arg to main
@@ -18,7 +17,9 @@
 // https://en.cppreference.com/w/c/string/byte/strtok
 // https://en.cppreference.com/w/c/memory/calloc
 // https://linux.die.net/man/3/getline
+//
 
+/* see corresponding header file for descriptions */
 
 struct movie* _createMovie(char* line)
 {
@@ -28,25 +29,23 @@ struct movie* _createMovie(char* line)
 
 	// movie title
 	char* token = strtok_r(line, ",", &savePtr);
+	//currMovie->title = token;
 	currMovie->title = calloc(strlen(token) + 1, sizeof(char));
-	printf(currMovie->title);
 	strcpy(currMovie->title, token);
+	free(currMovie->title);
 
 	// movie year
 	token = strtok_r(NULL, ",", &savePtr);
-	//currMovie->year = calloc(strlen(token) + 1, sizeof(char));
-	//strcpy(currMovie->year, token);
 	currMovie->year = atoi(token);
 
 	// movie languages
 	token = strtok_r(NULL, ",", &savePtr);
 	currMovie->languages = calloc(strlen(token) + 1, sizeof(char));
 	strcpy(currMovie->languages, token);
+	free(currMovie->languages);
 	
 	// movie rating
 	token = strtok_r(NULL, "\n", &savePtr);
-	//currMovie->rating = calloc(strlen(token) + 1, sizeof(char));
-	//strcpy(currMovie->rating, token);
 	currMovie->rating = atof(token);
 
 	currMovie->next = NULL;
@@ -62,7 +61,7 @@ struct movie *processFile(const char* filePath)
 	{
 		printf("oh no\n");
 		perror("Failed to open file\n");
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 
 	size_t len = 0;
@@ -150,7 +149,6 @@ void _showByYear(struct movie *list)
 {
 	int value = 0;
 	int resultCount = 0;
-	//char *str = malloc(4 * sizeof(char));
 	int input;	
 
 	printf("\nEnter the year for which you want to see movies: ");
@@ -250,7 +248,7 @@ void _showByRating(struct movie *list)
 
 	while (uniqueYearList != 0) 
 	{
-		printf("%d %2f %s\n", 
+		printf("%d %0.1f %s\n", 
 			uniqueYearList->year,
 			uniqueYearList->rating,
 			uniqueYearList->title);
@@ -259,7 +257,13 @@ void _showByRating(struct movie *list)
 
 	printf("\n");
 
-	free(uniqueYearList);
+	uniqueYearList = uniqueListRef;
+	while (uniqueYearList != 0)
+	{
+		uniqueListRef = uniqueYearList->next;
+		free(uniqueYearList);
+		uniqueYearList = uniqueListRef;
+	}
 }
 
 void _showByLanguage(struct movie *list)
@@ -322,7 +326,7 @@ int getMenuChoice()
 	return choice;	
 }
 
-void printMenuChoice(int val, struct movie *list)
+void printMenuChoices(int val, struct movie *list)
 {
 	switch(val)
 	{
@@ -332,5 +336,3 @@ void printMenuChoice(int val, struct movie *list)
 		default: break;
 	}
 }
-
-

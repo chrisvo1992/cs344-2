@@ -39,8 +39,9 @@ struct movie*  mergeSort(struct movie *head)
 struct movie* merge(struct movie *sideA, struct movie *sideB)
 {
 	struct movie *sortedTemp = malloc(sizeof(struct movie));
-	struct movie *currentNode = sortedTemp; 
-	
+	struct movie *currentNode = sortedTemp;
+	struct movie *ref = sortedTemp;
+
 	while (sideA != 0 && sideB != 0)
 	{	
 		if (sideA->year < sideB->year)
@@ -67,6 +68,10 @@ struct movie* merge(struct movie *sideA, struct movie *sideB)
 		currentNode->next = sideB;
 		sideB = sideB->next;
 	}	
-
-	return sortedTemp->next;
+	
+	ref = sortedTemp;
+	free(sortedTemp->next);
+	free(sortedTemp);
+	//return sortedTemp->next;
+	return ref->next;
 }
