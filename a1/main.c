@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
 	struct movie *list = processFile(argv[1]);
 	sortedList = mergeSort(list);
-	ref = sortedList;
+	//ref = sortedList;
 
 	while (value != 4)
 	{
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
 	printf("\n");
 
-	sortedList = ref->next;
+	//sortedList = ref->next;
 
 	while (sortedList != 0)
 	{

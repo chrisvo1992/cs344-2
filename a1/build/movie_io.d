@@ -1,1 +1,1 @@
-build/movie_io.o: movie_io.c movie.h
+build/movie_io.o: movie_io.c movie_io.h movie.h

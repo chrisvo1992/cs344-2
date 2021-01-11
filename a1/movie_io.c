@@ -32,7 +32,7 @@ struct movie* _createMovie(char* line)
 	//currMovie->title = token;
 	currMovie->title = calloc(strlen(token) + 1, sizeof(char));
 	strcpy(currMovie->title, token);
-	free(currMovie->title);
+	//free(currMovie->title);
 
 	// movie year
 	token = strtok_r(NULL, ",", &savePtr);
@@ -42,7 +42,7 @@ struct movie* _createMovie(char* line)
 	token = strtok_r(NULL, ",", &savePtr);
 	currMovie->languages = calloc(strlen(token) + 1, sizeof(char));
 	strcpy(currMovie->languages, token);
-	free(currMovie->languages);
+	//free(currMovie->languages);
 	
 	// movie rating
 	token = strtok_r(NULL, "\n", &savePtr);
@@ -61,7 +61,7 @@ struct movie *processFile(const char* filePath)
 	{
 		printf("oh no\n");
 		perror("Failed to open file\n");
-		exit(EXIT_FAILURE);
+		EXIT_FAILURE;
 	}
 
 	size_t len = 0;
@@ -179,17 +179,17 @@ void _showByRating(struct movie *list)
 	// assigning the first value to each year node.
 	// Note: the list is sorted in asc order. 
 	struct movie *newNode = 0;
-	struct movie *tempYear = 0;
+	struct movie *tempNode = 0;
 	struct movie *uniqueYearList = 0; 
 	struct movie *uniqueListRef = 0;
 	struct movie *headRef = list;
+	unsigned int uniqueCount = 0;
 
 	newNode = malloc(sizeof(struct movie));
 	newNode->title = list->title;
-	strcpy(newNode->title, list->title);
+	newNode->title = list->title;
 	newNode->year = list->year;
 	newNode->languages = list->languages;
-	strcpy(newNode->languages, list->languages);
 	newNode->rating = list->rating;
 	newNode->next = 0;
 	uniqueYearList = newNode;
@@ -197,25 +197,32 @@ void _showByRating(struct movie *list)
 
 	while (list != 0)
 	{
-		if (list->year == newNode->year)
+		// if there is already a unique year...
+		// ... I am trying it this way because I am getting 
+		// a seg fault when using list = list->next.
+		//
+		// if (list->year == newNode->year)
+		if (list->year == newNode->year || uniqueCount > 0)
 		{
-			list = list->next;
+			uniqueCount = 0;
+			//list = list->next;
 		}
 		else
 		{
-			tempYear = newNode;		
+			tempNode = newNode;		
 			newNode = malloc(sizeof(struct movie));
-			tempYear->next = newNode;
+			tempNode->next = newNode;
 			newNode->title = list->title;
 			newNode->year = list->year;
 			newNode->languages = list->languages;
 			newNode->rating = list->rating;
 			newNode->next = 0;
+			uniqueCount = 1;
 		}
 		list = list->next;
 	}
-	tempYear->next = newNode;
-	newNode->next = 0;
+	//tempNode->next = newNode;
+	//newNode->next = 0;
 	list = headRef;
 	
 	//
@@ -225,10 +232,13 @@ void _showByRating(struct movie *list)
 	// if the list rating is hight, swap values.
 	//
 	
+
+	///*
 	while (uniqueYearList != 0)
 	{
 		// while the years are the same, 
 		// compare the ratings.
+		///*
 		while (list->year == uniqueYearList->year)
 		{
 			if (list->rating > uniqueYearList->rating)
@@ -240,12 +250,20 @@ void _showByRating(struct movie *list)
 			}
 			list = list->next;
 		}
-
+		//*/
+		printf("\n");
+		printf("year: %d",uniqueYearList->year);
+		printf(" ");
+		printf("title: %s",uniqueYearList->title);
+		printf(" ");
+		printf("rating: %f",uniqueYearList->rating);
 		uniqueYearList = uniqueYearList->next;
 	}
+	//*/
 	
 	uniqueYearList = uniqueListRef;
 
+	/*
 	while (uniqueYearList != 0) 
 	{
 		printf("%d %0.1f %s\n", 
@@ -254,9 +272,10 @@ void _showByRating(struct movie *list)
 			uniqueYearList->title);
 		uniqueYearList = uniqueYearList->next;
 	}
+	*/
 
 	printf("\n");
-
+	/*
 	uniqueYearList = uniqueListRef;
 	while (uniqueYearList != 0)
 	{
@@ -264,6 +283,7 @@ void _showByRating(struct movie *list)
 		free(uniqueYearList);
 		uniqueYearList = uniqueListRef;
 	}
+	*/
 }
 
 void _showByLanguage(struct movie *list)

@@ -69,9 +69,9 @@ struct movie* merge(struct movie *sideA, struct movie *sideB)
 		sideB = sideB->next;
 	}	
 	
-	ref = sortedTemp;
-	free(sortedTemp->next);
-	free(sortedTemp);
-	//return sortedTemp->next;
-	return ref->next;
+	//ref = sortedTemp;
+	//free(sortedTemp->next);
+	//free(sortedTemp);
+	return sortedTemp->next;
+	//return ref->next;
 }
