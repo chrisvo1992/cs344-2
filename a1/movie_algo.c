@@ -41,6 +41,8 @@ struct movie* merge(struct movie *sideA, struct movie *sideB)
 	struct movie *sortedTemp = malloc(sizeof(struct movie));
 	struct movie *currentNode = sortedTemp;
 	struct movie *ref = sortedTemp;
+	
+	printf("%d\n", sizeof(struct movie));
 
 	while (sideA != 0 && sideB != 0)
 	{	
@@ -69,9 +71,8 @@ struct movie* merge(struct movie *sideA, struct movie *sideB)
 		sideB = sideB->next;
 	}	
 	
-	//ref = sortedTemp;
-	//free(sortedTemp->next);
-	//free(sortedTemp);
-	return sortedTemp->next;
-	//return ref->next;
+	ref = sortedTemp;
+	free(sortedTemp);
+	//return sortedTemp->next;
+	return ref->next;
 }

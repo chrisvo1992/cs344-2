@@ -57,7 +57,7 @@ void _showByYear(struct movie*);
 // 	number of movies in the file.
 // output: stdout of each year that has a movie with the
 // highest rating.
-void _showByRating(struct movie*, int*);
+void _showByRating(struct movie*, int);
 
 // when movie menu option 3 is chosen, asks the user to enter
 // a language that they would like to search the movie list for.
@@ -73,7 +73,7 @@ void _showByLanguage(struct movie*);
 // input: an integer representing the movie menu choice and
 // 	a linked list of movies.
 // output: the resulting output of the choices made.
-void printMenuChoices(int, struct movie*, int*);
+void printMenuChoices(int, struct movie*, int);
 
 // asks the user to enter a choice and gets the user input
 // input: none

@@ -56,8 +56,7 @@ struct movie* _createMovie(char* line)
 struct movie *processFile(const char* filePath, int *size)
 {
 	FILE* movieFile = fopen(filePath, "r");
-	int count = 0;
-
+	
 	if (!movieFile)
 	{
 		printf("oh no\n");
@@ -83,7 +82,6 @@ struct movie *processFile(const char* filePath, int *size)
 		{
 			
 			struct movie *newNode = _createMovie(currLine);
-			count++;
 			(*size)++;
 
 			if (head == NULL)
@@ -100,7 +98,6 @@ struct movie *processFile(const char* filePath, int *size)
 	}
 	free(currLine);
 	fclose(movieFile);
-	size = &count;
 	return head;
 }
 
@@ -177,117 +174,71 @@ void _showByYear(struct movie *list)
 	}
 }
 
-void _showByRating(struct movie *list, int *size)
+void _showByRating(struct movie *list, int size)
 {
-	// read the unique years and create a list of those years,
-	// assigning the first value to each year node.
-	// Note: the list is sorted in asc order. 
-	struct movie *newNode = 0;
-	struct movie *tempNode = 0;
-	struct movie *uniqueYearList = 0; 
-	struct movie *uniqueListRef = 0;
+	size_t i = 0;
+	struct movie *uniqueYear = 0;
 	struct movie *headRef = list;
-	int movieCount = size;
+	struct movie *tempNode = 0;
+	struct movie *newNode = 0;
+	struct movie *tempRef = 0;
 
+	// The list is presorted in asc order, therefore the first
+	// value read is assigned to the first node in the uniqueYear
+	// linked list.
+	
 	newNode = malloc(sizeof(struct movie));
-	// since the list is presorted, the first node of list
-	// will be the earliest year.
-	// The list already holds memory locations of the values.
-	// Referencing the memory locations will save on memory
-	// and headaches of memory control.
-	newNode->title = list->title;
 	newNode->year = list->year;
-	newNode->languages = list->languages;
+	newNode->title = list->title;
 	newNode->rating = list->rating;
+	newNode->next = 0;
+	uniqueYear = newNode;
 
-	uniqueYearList = newNode;
-
-	while (list != NULL)
+	while (list != 0)
+	//while (i < size)
 	{
-		while (list->year == newNode->year)
+		if (newNode->year != list->year)
 		{
-			list = list->next;
-			/*	
-			if (list->next != 0)
-			{
-				list = list->next;
-			}	
-			*/
+			tempNode = newNode;
+			newNode = malloc(sizeof(struct movie));
+			tempNode->next = newNode;
+			newNode->title = list->title;
+			newNode->year = list->year;
+			newNode->rating = list->rating;
+			newNode->next = 0;
 		}
-		tempNode = newNode;
-		newNode = malloc(sizeof(struct movie));
-		newNode->year = list->year;
-		newNode->title = list->title;
-		newNode->languages = list->languages;
-		newNode->rating = list->rating;
-		tempNode->next = newNode;	
-		newNode->next = 0;
 		list = list->next;
 	}
 	
-	//tempNode->next = newNode;
-	//newNode->next = 0;
+	// reset list to its starting location
 	list = headRef;
 	
-	//
-	// while checking the year and change of year, compare the rating
-	// of each year in list with the rating of each unique year.
-	//
-	// if the list rating is hight, swap values.
-	//
-	
-
-	///*
-	while (uniqueYearList != 0)
+	while (uniqueYear != 0)
 	{
-		// while the years are the same, 
-		// compare the ratings.
-		/*
-		while (list->year == uniqueYearList->year)
+		if (list != 0)
 		{
-			if (list->rating > uniqueYearList->rating)
+			while (list->year == uniqueYear->year)
 			{
-				uniqueYearList->title = list->title;
-				uniqueYearList->year = list->year;			
-				uniqueYearList->languages = list->languages;
-				uniqueYearList->rating = list->rating;
+				if (list->rating > uniqueYear->rating)
+				{
+					uniqueYear->title = list->title;
+					uniqueYear->year = list->year;
+					uniqueYear->rating = list->rating;
+				}
+				if (list->next != 0)
+				{
+					list = list->next;
+				} else {break;}
 			}
-			list = list->next;
 		}
-		*/
+		printf("%u ", uniqueYear->year);
+		printf("%0.1f ",uniqueYear->rating);
+		printf(uniqueYear->title);
 		printf("\n");
-		printf("year: %d",uniqueYearList->year);
-		printf(" ");
-		printf("title: %s",uniqueYearList->title);
-		printf(" ");
-		printf("rating: %f",uniqueYearList->rating);
-		uniqueYearList = uniqueYearList->next;
+		tempNode = uniqueYear;
+		uniqueYear = tempNode->next;
+		free(tempNode);
 	}
-	//*/
-	
-	uniqueYearList = uniqueListRef;
-
-	/*
-	while (uniqueYearList != 0) 
-	{
-		printf("%d %0.1f %s\n", 
-			uniqueYearList->year,
-			uniqueYearList->rating,
-			uniqueYearList->title);
-		uniqueYearList = uniqueYearList->next;
-	}
-	*/
-
-	printf("\n");
-	/*
-	uniqueYearList = uniqueListRef;
-	while (uniqueYearList != 0)
-	{
-		uniqueListRef = uniqueYearList->next;
-		free(uniqueYearList);
-		uniqueYearList = uniqueListRef;
-	}
-	*/
 }
 
 void _showByLanguage(struct movie *list)
@@ -350,7 +301,7 @@ int getMenuChoice()
 	return choice;	
 }
 
-void printMenuChoices(int val, struct movie *list, int *size)
+void printMenuChoices(int val, struct movie *list, int size)
 {
 	switch(val)
 	{
