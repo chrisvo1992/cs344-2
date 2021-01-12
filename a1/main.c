@@ -22,6 +22,7 @@
 int main(int argc, char *argv[])
 {
 	int value = 0;
+	int *movieCount = 0;
 	struct movie *sortedList = 0;
 	struct movie *ref = 0;
 
@@ -31,7 +32,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	struct movie *list = processFile(argv[1]);
+	struct movie *list = processFile(argv[1], &movieCount);
 	sortedList = mergeSort(list);
 	//ref = sortedList;
 
@@ -39,7 +40,7 @@ int main(int argc, char *argv[])
 	{
 		printMovieMenu();
 		value = getMenuChoice();
-		printMenuChoices(value, sortedList);
+		printMenuChoices(value, sortedList, movieCount);
 	}
 
 	printf("\n");

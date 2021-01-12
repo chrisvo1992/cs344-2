@@ -8,9 +8,10 @@ struct movie* _createMovie(char*);
 
 // creates a linked list of movies, using
 // 	_createMovie as a helper function.
-// input: an csv file
+// input: an csv file and a reference to 
+// 	the number of movies read from the file.
 // output: a linked list (unsorted) of movies.
-struct movie* processFile(const char*);
+struct movie* processFile(const char*, int*);
 
 // finds a substring within a string
 // input: the string being searched for 
@@ -52,10 +53,11 @@ void _showByYear(struct movie*);
 // is created and destroyed. Movies with the same year 
 // have their rating compared and swapped using the greater
 // of the two. 
-// input: a linked list of movies
+// input: a linked list of movies and a reference to the 
+// 	number of movies in the file.
 // output: stdout of each year that has a movie with the
 // highest rating.
-void _showByRating(struct movie*);
+void _showByRating(struct movie*, int*);
 
 // when movie menu option 3 is chosen, asks the user to enter
 // a language that they would like to search the movie list for.
@@ -71,7 +73,7 @@ void _showByLanguage(struct movie*);
 // input: an integer representing the movie menu choice and
 // 	a linked list of movies.
 // output: the resulting output of the choices made.
-void printMenuChoices(int, struct movie*);
+void printMenuChoices(int, struct movie*, int*);
 
 // asks the user to enter a choice and gets the user input
 // input: none

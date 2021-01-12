@@ -53,9 +53,10 @@ struct movie* _createMovie(char* line)
 	return currMovie;
 }
 
-struct movie *processFile(const char* filePath)
+struct movie *processFile(const char* filePath, int *size)
 {
 	FILE* movieFile = fopen(filePath, "r");
+	int count = 0;
 
 	if (!movieFile)
 	{
@@ -82,6 +83,8 @@ struct movie *processFile(const char* filePath)
 		{
 			
 			struct movie *newNode = _createMovie(currLine);
+			count++;
+			(*size)++;
 
 			if (head == NULL)
 			{
@@ -97,6 +100,7 @@ struct movie *processFile(const char* filePath)
 	}
 	free(currLine);
 	fclose(movieFile);
+	size = &count;
 	return head;
 }
 
@@ -173,7 +177,7 @@ void _showByYear(struct movie *list)
 	}
 }
 
-void _showByRating(struct movie *list)
+void _showByRating(struct movie *list, int *size)
 {
 	// read the unique years and create a list of those years,
 	// assigning the first value to each year node.
@@ -183,44 +187,44 @@ void _showByRating(struct movie *list)
 	struct movie *uniqueYearList = 0; 
 	struct movie *uniqueListRef = 0;
 	struct movie *headRef = list;
-	unsigned int uniqueCount = 0;
+	int movieCount = size;
 
 	newNode = malloc(sizeof(struct movie));
-	newNode->title = list->title;
+	// since the list is presorted, the first node of list
+	// will be the earliest year.
+	// The list already holds memory locations of the values.
+	// Referencing the memory locations will save on memory
+	// and headaches of memory control.
 	newNode->title = list->title;
 	newNode->year = list->year;
 	newNode->languages = list->languages;
 	newNode->rating = list->rating;
-	newNode->next = 0;
-	uniqueYearList = newNode;
-	uniqueListRef = uniqueYearList;
 
-	while (list != 0)
+	uniqueYearList = newNode;
+
+	while (list != NULL)
 	{
-		// if there is already a unique year...
-		// ... I am trying it this way because I am getting 
-		// a seg fault when using list = list->next.
-		//
-		// if (list->year == newNode->year)
-		if (list->year == newNode->year || uniqueCount > 0)
+		while (list->year == newNode->year)
 		{
-			uniqueCount = 0;
-			//list = list->next;
+			list = list->next;
+			/*	
+			if (list->next != 0)
+			{
+				list = list->next;
+			}	
+			*/
 		}
-		else
-		{
-			tempNode = newNode;		
-			newNode = malloc(sizeof(struct movie));
-			tempNode->next = newNode;
-			newNode->title = list->title;
-			newNode->year = list->year;
-			newNode->languages = list->languages;
-			newNode->rating = list->rating;
-			newNode->next = 0;
-			uniqueCount = 1;
-		}
+		tempNode = newNode;
+		newNode = malloc(sizeof(struct movie));
+		newNode->year = list->year;
+		newNode->title = list->title;
+		newNode->languages = list->languages;
+		newNode->rating = list->rating;
+		tempNode->next = newNode;	
+		newNode->next = 0;
 		list = list->next;
 	}
+	
 	//tempNode->next = newNode;
 	//newNode->next = 0;
 	list = headRef;
@@ -238,7 +242,7 @@ void _showByRating(struct movie *list)
 	{
 		// while the years are the same, 
 		// compare the ratings.
-		///*
+		/*
 		while (list->year == uniqueYearList->year)
 		{
 			if (list->rating > uniqueYearList->rating)
@@ -250,7 +254,7 @@ void _showByRating(struct movie *list)
 			}
 			list = list->next;
 		}
-		//*/
+		*/
 		printf("\n");
 		printf("year: %d",uniqueYearList->year);
 		printf(" ");
@@ -346,12 +350,12 @@ int getMenuChoice()
 	return choice;	
 }
 
-void printMenuChoices(int val, struct movie *list)
+void printMenuChoices(int val, struct movie *list, int *size)
 {
 	switch(val)
 	{
 		case 1: _showByYear(list); break;
-		case 2: _showByRating(list); break;
+		case 2: _showByRating(list, size); break;
 		case 3: _showByLanguage(list); break; 	
 		default: break;
 	}
