@@ -42,8 +42,6 @@ struct movie* merge(struct movie *sideA, struct movie *sideB)
 	struct movie *currentNode = sortedTemp;
 	struct movie *ref = sortedTemp;
 	
-	printf("%d\n", sizeof(struct movie));
-
 	while (sideA != 0 && sideB != 0)
 	{	
 		if (sideA->year < sideB->year)
@@ -73,6 +71,5 @@ struct movie* merge(struct movie *sideA, struct movie *sideB)
 	
 	ref = sortedTemp;
 	free(sortedTemp);
-	//return sortedTemp->next;
 	return ref->next;
 }

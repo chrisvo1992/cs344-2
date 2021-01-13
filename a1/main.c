@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	{
 		printMovieMenu();
 		value = getMenuChoice();
-		printMenuChoices(value, sortedList, movieCount);
+		printMenuChoices(value, sortedList);
 	}
 
 	printf("\n");
@@ -53,8 +53,6 @@ int main(int argc, char *argv[])
 
 	while (sortedList != 0)
 	{
-		printf(sortedList->title);
-		printf("\n");
 		ref = sortedList;
 		free(ref->title);
 		free(ref->languages);

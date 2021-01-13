@@ -24,25 +24,59 @@
 struct movie* _createMovie(char* line)
 {
 	struct movie *currMovie = malloc(sizeof(struct movie));
-
+	struct node *newLang = 0;
+	struct node *tempLang = 0;
+	struct node *langList = 0;
+	char *refToken;
+	char *saveToken;
 	char *savePtr;
+	size_t i = 0;
 
 	// movie title
 	char* token = strtok_r(line, ",", &savePtr);
-	//currMovie->title = token;
 	currMovie->title = calloc(strlen(token) + 1, sizeof(char));
 	strcpy(currMovie->title, token);
-	//free(currMovie->title);
 
 	// movie year
 	token = strtok_r(NULL, ",", &savePtr);
 	currMovie->year = atoi(token);
 
 	// movie languages
-	token = strtok_r(NULL, ",", &savePtr);
-	currMovie->languages = calloc(strlen(token) + 1, sizeof(char));
-	strcpy(currMovie->languages, token);
-	//free(currMovie->languages);
+	token = strtok_r(NULL, ";", &savePtr);
+	//char *langToken = strtok_r(token, ";", &savePtr);
+
+	// get rid of the first bracket
+	//langToken++;
+	token++;
+
+	//check for the closing bracket
+	if (token[strlen(token) - 1] == ']')
+	{ 
+		printf("yo shit is only in one language\n");
+		newLang = malloc(sizeof(struct node));
+		newLang->val = calloc(strlen(token), sizeof(char));
+		newLang->next = 0;
+		langList = newLang;
+	}
+	else 
+	{
+		newLang = malloc(sizeof(struct node));
+		newLang->val = calloc(strlen(token) + 1, sizeof(char));
+		newLang->next = 0;
+		langList = newLang;
+		printf("strlen of %s: %u\n", token, strlen(token));
+		/*
+		while (token[strlen(token) - 1] != ']')
+		{
+			token = strtok_r(NULL, ";", &savePtr);
+			tempLang = newLang;
+			newLang = malloc(sizeof(struct node));
+			newLang->val = calloc(strlen(token) + 1, sizeof(char));
+			tempLang->next = newLang;
+			newLang->next = 0;
+		}	
+		*/
+	}
 	
 	// movie rating
 	token = strtok_r(NULL, "\n", &savePtr);
@@ -174,7 +208,7 @@ void _showByYear(struct movie *list)
 	}
 }
 
-void _showByRating(struct movie *list, int size)
+void _showByRating(struct movie *list)
 {
 	size_t i = 0;
 	struct movie *uniqueYear = 0;
@@ -244,14 +278,13 @@ void _showByRating(struct movie *list, int size)
 void _showByLanguage(struct movie *list)
 {
 	char lang[20];
-	unsigned int matchCount = 0;
+	size_t matchCount = 0;
 	
 	printf("\nEnter the language for which you want to see movies: ");
 	scanf("%s", lang);
-
+	/*
 	while (list != 0)
 	{
-		//printf("\n%s\n", list->languages);		
 		if (findStr(list->languages, lang))
 		{
 			printf("%d %s\n", list->year, list->title);	
@@ -259,7 +292,7 @@ void _showByLanguage(struct movie *list)
 		}
 		list = list->next;
 	}
-
+	*/
 	if (matchCount == 0)
 	{
 		printf("\nNo movies exist with that langauge.\n");
@@ -301,12 +334,12 @@ int getMenuChoice()
 	return choice;	
 }
 
-void printMenuChoices(int val, struct movie *list, int size)
+void printMenuChoices(int val, struct movie *list)
 {
 	switch(val)
 	{
 		case 1: _showByYear(list); break;
-		case 2: _showByRating(list, size); break;
+		case 2: _showByRating(list); break;
 		case 3: _showByLanguage(list); break; 	
 		default: break;
 	}
