@@ -25,7 +25,10 @@ int main(int argc, char *argv[])
 	int movieCount = 0;
 	int *mcPtr = &movieCount;
 	struct movie *sortedList = 0;
-	struct movie *ref = 0;
+	struct movie *ref1 = 0;
+	// for the languages in each movie
+	struct node *ref2 = 0;
+	struct node *ref3	= 0;
 
 	if (argc < 2)
 	{
@@ -35,7 +38,7 @@ int main(int argc, char *argv[])
 
 	struct movie *list = processFile(argv[1], mcPtr);
 	sortedList = mergeSort(list);
-	ref = sortedList;
+	ref1 = sortedList;
 
 	printf("\nProcessed file: %s and parsed data for %u movies.\n",
 		argv[1], movieCount);
@@ -49,14 +52,21 @@ int main(int argc, char *argv[])
 
 	printf("\n");
 
-	sortedList = ref;
+	sortedList = ref1;
 
 	while (sortedList != 0)
 	{
-		ref = sortedList;
-		free(ref->title);
-		free(ref->languages);
-		free(ref);
+		ref1 = sortedList;
+		free(ref1->title);
+		ref2 = sortedList->languages;
+		while (ref2 != 0)
+		{
+			ref3 = ref2;
+			free(ref3->val);		
+			free(ref3);
+			ref2 = ref2->next;
+		}
+		free(ref1);
 		sortedList = sortedList->next;
 	}
 	free(sortedList);

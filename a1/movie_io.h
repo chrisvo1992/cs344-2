@@ -13,11 +13,16 @@ struct movie* _createMovie(char*);
 // output: a linked list (unsorted) of movies.
 struct movie* processFile(const char*, int*);
 
-// finds a substring within a string
+// finds a string within a linked list of lang nodes.
 // input: the string being searched for 
 // 	and the string being searched.
 // output: int representing true or false.
-int findStr(char const*, char const*);
+int _findStr(char const*, char const*);
+
+// prints the list of languages for that movie
+// input: a list of languages 
+// output: stdout
+void _printLanguages(struct node*);
 
 // prints a node in the linked list of movies
 // input: a linked list of movies
