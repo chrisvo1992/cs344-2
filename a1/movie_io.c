@@ -59,9 +59,9 @@ struct movie* _createMovie(char* line)
 	token[strlen(token) - 1] = '\0';
 
 	// preserve the location of the read location
-	// movie rating
 	refToken = token;
 
+	// movie rating
 	token = strtok_r(NULL, "\n", &savePtr);
 	currMovie->rating = atof(token);
 
@@ -72,7 +72,6 @@ struct movie* _createMovie(char* line)
 	// because colonCount is incrementing.
 	for (i; i < strlen(refToken); ++i)
 	{
-		//printf("%c", refToken[i]);
 		if (refToken[i] == ';')
 		{
 			colonCount++;	
@@ -106,8 +105,8 @@ struct movie* _createMovie(char* line)
 		strcpy(newLang->val, token);
 		i++;
 	}
-	printf("%s ", newLang->val);
-	printf("\n");
+	//printf("%s ", newLang->val);
+	//printf("\n");
 
 	// point the list of languages to the movie language list
 	currMovie->languages = langList;
