@@ -57,14 +57,19 @@ struct movie* _createMovie(char* line)
 
 	// get rid of the closing bracket
 	token[strlen(token) - 1] = '\0';
-	refToken = token;
 
 	// preserve the location of the read location
 	// movie rating
+	refToken = token;
+
 	token = strtok_r(NULL, "\n", &savePtr);
 	currMovie->rating = atof(token);
 
 	// count the number of languages
+	// NOTE: for some reason the compiler says 
+	// that this for loop is not used. After
+	// examining GDB, it has to be used
+	// because colonCount is incrementing.
 	for (i; i < strlen(refToken); ++i)
 	{
 		//printf("%c", refToken[i]);
@@ -300,7 +305,6 @@ void _showByRating(struct movie *list)
 	struct movie *headRef = list;
 	struct movie *tempNode = 0;
 	struct movie *newNode = 0;
-	struct movie *tempRef = 0;
 
 	// The list is presorted in asc order, therefore the first
 	// value read is assigned to the first node in the uniqueYear
