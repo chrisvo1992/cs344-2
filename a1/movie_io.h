@@ -28,7 +28,7 @@ struct movie* _createMovie(char*);
 // input: an csv file and an address reference to 
 // 	the number of movies read from the file.
 // output: a linked list (unsorted) of movies.
-struct movie* processFile(const char*, int*);
+struct movie* _processFile(const char*, int*);
 
 // creates a list of unique years for use in the 
 // _sortByRating function. Reduces the repeated 

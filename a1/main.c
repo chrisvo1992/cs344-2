@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	struct movie *list = processFile(argv[1], mcPtr);
-	sortedList = mergeSort(list);
+	struct movie *list = _processFile(argv[1], mcPtr);
+	sortedList = _mergeSort(list);
 	ref1 = sortedList;
 	// create the unique year list for the 
 	// _sortByRating function

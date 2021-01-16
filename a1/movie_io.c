@@ -104,8 +104,6 @@ struct movie* _createMovie(char* line)
 		strcpy(newLang->val, token);
 		i++;
 	}
-	//printf("%s ", newLang->val);
-	//printf("\n");
 
 	// point the list of languages to the movie language list
 	currMovie->languages = langList;
@@ -120,7 +118,7 @@ struct movie* _createMovie(char* line)
 // input: an csv file and an address reference to 
 // 	the number of movies read from the file.
 // output: a linked list (unsorted) of movies.
-struct movie *processFile(const char* filePath, int *size)
+struct movie *_processFile(const char* filePath, int *size)
 {
 	FILE* movieFile = fopen(filePath, "r");
 	

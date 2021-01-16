@@ -1,7 +1,7 @@
 #include "movie_io.h"
 #include "movie_algo.h"
 
-struct movie *merge(struct movie *sideA, struct movie *sideB)
+struct movie *_merge(struct movie *sideA, struct movie *sideB)
 {
 	struct movie *sortedTemp = malloc(sizeof(struct movie));
 	struct movie *currentNode = sortedTemp;
@@ -39,7 +39,7 @@ struct movie *merge(struct movie *sideA, struct movie *sideB)
 	return ref->next;
 }
 
-struct movie *mergeSort(struct movie *head)
+struct movie *_mergeSort(struct movie *head)
 {
 
 	// check if there is only one node in the linked list
@@ -69,8 +69,8 @@ struct movie *mergeSort(struct movie *head)
 
 	temp->next = 0;
 
-	listA = mergeSort(head);
-	listB = mergeSort(slow);
+	listA = _mergeSort(head);
+	listB = _mergeSort(slow);
 	
-	return merge(listA, listB);
+	return _merge(listA, listB);
 }
