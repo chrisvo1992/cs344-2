@@ -25,6 +25,7 @@ int main(int argc, char *argv[])
 	int movieCount = 0;
 	int *mcPtr = &movieCount;
 	struct movie *sortedList = 0;
+	struct movie *uniqueYears = 0;
 	struct movie *ref1 = 0;
 	// for the languages in each movie
 	struct node *ref2 = 0;
@@ -39,6 +40,9 @@ int main(int argc, char *argv[])
 	struct movie *list = processFile(argv[1], mcPtr);
 	sortedList = mergeSort(list);
 	ref1 = sortedList;
+	// create the unique year list for the 
+	// _sortByRating function
+	uniqueYears = _createUniqueYearList(sortedList);
 
 	printf("\nProcessed file: %s and parsed data for %u movies.\n",
 		argv[1], movieCount);
@@ -47,7 +51,7 @@ int main(int argc, char *argv[])
 	{
 		printMovieMenu();
 		value = getMenuChoice();
-		printMenuChoices(value, sortedList);
+		printMenuChoices(value, sortedList, uniqueYears);
 	}
 
 	printf("\n");
@@ -70,6 +74,13 @@ int main(int argc, char *argv[])
 		sortedList = sortedList->next;
 	}
 	free(sortedList);
+
+	while (uniqueYears != 0)
+	{
+		ref1 = uniqueYears;
+		uniqueYears = ref1->next;
+		free(ref1);
+	}
 
 	return 0;
 }

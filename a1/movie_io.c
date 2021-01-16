@@ -17,8 +17,6 @@
 // https://linux.die.net/man/3/getline
 //
 
-/* see corresponding header file for descriptions */
-
 // reads a line of input from a file and allocates
 // memory for a movie struct
 // input: a csv line
@@ -66,10 +64,11 @@ struct movie* _createMovie(char* line)
 	currMovie->rating = atof(token);
 
 	// count the number of languages
-	// NOTE: for some reason the compiler says 
-	// that this for loop is not used. After
-	// examining GDB, it has to be used
-	// because colonCount is incrementing.
+	// NOTE: compiler says that this for loop is not used. After
+	// examining GDB, it has to be used because colonCount is 
+	// incrementing. I suspect that the gdb warning occurs when 
+	// there is only one language, in which case, this logic
+	// would not be used.
 	for (i; i < strlen(refToken); ++i)
 	{
 		if (refToken[i] == ';')
@@ -129,7 +128,7 @@ struct movie *processFile(const char* filePath, int *size)
 	{
 		printf("oh no\n");
 		perror("Failed to open file\n");
-		EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
 
 	size_t len = 0;
@@ -174,6 +173,44 @@ struct movie *processFile(const char* filePath, int *size)
 	return head;
 }
 
+// creates a list of unique years for use in the 
+// _sortByRating function. Reduces the repeated 
+// allocation of memory when option 2 is chosen.
+struct movie* _createUniqueYearList(struct movie* list)
+{
+	struct movie *uniqueYears = 0;
+	struct movie *tempNode = 0;
+	struct movie *newNode = 0;
+
+	// The list is presorted in asc order, therefore the first
+	// value read is assigned to the first node in the uniqueYear
+	// linked list.
+	
+	newNode = malloc(sizeof(struct movie));
+	newNode->year = list->year;
+	newNode->title = list->title;
+	newNode->rating = list->rating;
+	newNode->next = 0;
+	uniqueYears = newNode;
+
+	while (list != 0)
+	{
+		if (newNode->year != list->year)
+		{
+			tempNode = newNode;
+			newNode = malloc(sizeof(struct movie));
+			tempNode->next = newNode;
+			newNode->title = list->title;
+			newNode->year = list->year;
+			newNode->rating = list->rating;
+			newNode->next = 0;
+		}
+		list = list->next;
+	}
+
+	return uniqueYears;
+}
+
 // finds a string within a linked list of lang nodes.
 // input: the string being searched for 
 // 	and the string being searched.
@@ -200,7 +237,7 @@ int _findStr(char const *str, char const *subStr)
 // prints the list of languages for that movie
 // input: a list of languages 
 // output: stdout
-void printLanguages(struct node *langs)
+void _printLanguages(struct node *langs)
 {
 	while (langs != 0)
 	{
@@ -219,7 +256,7 @@ void _printMovie(struct movie *aMovie)
 	printf("%s, %d",
 		aMovie->title,
 		aMovie->year);
-	printLanguages(languages),
+	_printLanguages(languages),
 	printf("%f", aMovie->rating);
 }
 
@@ -298,55 +335,25 @@ void _showByYear(struct movie *list)
 // input: a linked list of movies
 // output: stdout of each year that has a movie with the
 // highest rating.
-void _showByRating(struct movie *list)
+void _showByRating(struct movie *list, struct movie *uniqueList)
 {
-	struct movie *uniqueYear = 0;
-	struct movie *headRef = list;
-	struct movie *tempNode = 0;
-	struct movie *newNode = 0;
+	//struct movie *uniqueYear = 0;
+	//struct movie *headRef = list;
+	//struct movie *tempNode = 0;
 
-	// The list is presorted in asc order, therefore the first
-	// value read is assigned to the first node in the uniqueYear
-	// linked list.
-	
-	newNode = malloc(sizeof(struct movie));
-	newNode->year = list->year;
-	newNode->title = list->title;
-	newNode->rating = list->rating;
-	newNode->next = 0;
-	uniqueYear = newNode;
-
-	while (list != 0)
-	{
-		if (newNode->year != list->year)
-		{
-			tempNode = newNode;
-			newNode = malloc(sizeof(struct movie));
-			tempNode->next = newNode;
-			newNode->title = list->title;
-			newNode->year = list->year;
-			newNode->rating = list->rating;
-			newNode->next = 0;
-		}
-		list = list->next;
-	}
-	
-	// reset list to its starting location
-	list = headRef;
-	
-	while (uniqueYear != 0)
+	while (uniqueList != 0)
 	{
 		if (list != 0)
 		{
 			// check all the years that == the 
 			// year in the uniqueYear node
-			while (list->year == uniqueYear->year)
+			while (list->year == uniqueList->year)
 			{
-				if (list->rating > uniqueYear->rating)
+				if (list->rating > uniqueList->rating)
 				{
-					uniqueYear->title = list->title;
-					uniqueYear->year = list->year;
-					uniqueYear->rating = list->rating;
+					uniqueList->title = list->title;
+					uniqueList->year = list->year;
+					uniqueList->rating = list->rating;
 				}
 				if (list->next != 0)
 				{
@@ -354,13 +361,11 @@ void _showByRating(struct movie *list)
 				} else {break;}
 			}
 		}
-		printf("%u ", uniqueYear->year);
-		printf("%0.1f ",uniqueYear->rating);
-		printf(uniqueYear->title);
+		printf("%u ", uniqueList->year);
+		printf("%0.1f ",uniqueList->rating);
+		printf(uniqueList->title);
 		printf("\n");
-		tempNode = uniqueYear;
-		uniqueYear = tempNode->next;
-		free(tempNode);
+		uniqueList = uniqueList->next;
 	}
 }
 
@@ -449,12 +454,12 @@ int getMenuChoice()
 // input: an integer representing the movie menu choice and
 // 	a linked list of movies.
 // output: the resulting output of the choices made.
-void printMenuChoices(int val, struct movie *list)
+void printMenuChoices(int val, struct movie *list, struct movie *uList)
 {
 	switch(val)
 	{
 		case 1: _showByYear(list); break;
-		case 2: _showByRating(list); break;
+		case 2: _showByRating(list, uList); break;
 		case 3: _showByLanguage(list); break; 	
 		default: break;
 	}

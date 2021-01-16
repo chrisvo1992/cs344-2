@@ -1,6 +1,4 @@
 #include <stdlib.h>
-#include "movie.h"
-
 
 // recursive function that divides the movie linked list
 // by two. Stores the pointer location of the beginning

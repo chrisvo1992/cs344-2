@@ -1,4 +1,21 @@
-#include "movie.h"
+#include "movie_algo.h"
+
+// used for the list of languages for each movie
+struct node
+{
+	char *val;
+	struct node *next;
+};
+
+// da move eeeee
+struct movie 
+{
+	char* title;
+	unsigned int year;
+	struct node *languages;
+	float rating;
+	struct movie *next;
+};
 
 // reads a line of input from a file and allocates
 // memory for a movie struct
@@ -12,6 +29,11 @@ struct movie* _createMovie(char*);
 // 	the number of movies read from the file.
 // output: a linked list (unsorted) of movies.
 struct movie* processFile(const char*, int*);
+
+// creates a list of unique years for use in the 
+// _sortByRating function. Reduces the repeated 
+// allocation of memory when option 2 is chosen.
+struct movie* _createUniqueYearList(struct movie*);
 
 // finds a string within a linked list of lang nodes.
 // input: the string being searched for 
@@ -61,7 +83,7 @@ void _showByYear(struct movie*);
 // input: a linked list of movies
 // output: stdout of each year that has a movie with the
 // highest rating.
-void _showByRating(struct movie*);
+void _showByRating(struct movie*, struct movie*);
 
 // when movie menu option 3 is chosen, asks the user to enter
 // a language that they would like to search the movie list for.
@@ -77,7 +99,7 @@ void _showByLanguage(struct movie*);
 // input: an integer representing the movie menu choice and
 // 	a linked list of movies.
 // output: the resulting output of the choices made.
-void printMenuChoices(int, struct movie*);
+void printMenuChoices(int, struct movie*, struct movie*);
 
 // asks the user to enter a choice and gets the user input
 // input: none
