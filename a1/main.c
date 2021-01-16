@@ -56,8 +56,6 @@ int main(int argc, char *argv[])
 
 	printf("\n");
 
-	sortedList = ref1;
-
 	while (sortedList != 0)
 	{
 		ref1 = sortedList;
