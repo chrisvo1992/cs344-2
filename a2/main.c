@@ -6,8 +6,9 @@
 // - read a csv file as an arg to main
 // - create structs to hold each movie
 // - create a linked list of these structs
-// - give user choices to answer questions about the movie data
-// - prints info about movies based on user choices
+// - give user choices to answer questions 
+//   and create files containing info 
+//   about the movie data
 
 /*** REFERENCES ***/
 // https://en.cppreference.com/w/c/string/byte/strtok
@@ -47,7 +48,7 @@ int main(int argc, char *argv[])
 	printf("\nProcessed file: %s and parsed data for %u movies.\n",
 		argv[1], movieCount);
 
-	while (value != 4)
+	while (value != 2)
 	{
 		printMovieMenu();
 		value = getMenuChoice();

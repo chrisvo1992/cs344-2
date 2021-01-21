@@ -94,6 +94,18 @@ void _showByRating(struct movie*, struct movie*);
 // output: stdout of movies that are in the language entered by the user.
 void _showByLanguage(struct movie*);
 
+void _findLargestFile();
+
+void _findSmallestFile();
+
+void _specifyFile();
+
+// the user is presented with 3 further choices about which
+// file to process
+// input: list
+// output: hmm
+void _selectFile(struct movie *list);
+
 // calls the given function the corresponds to the menu
 // choice selected by the user.
 // input: an integer representing the movie menu choice and

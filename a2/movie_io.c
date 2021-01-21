@@ -1,7 +1,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "movie_io.h"
+
+#define PREFIX "movies_"
 
 /****DESCRIPTION****/
 // - read a csv file as an arg to main
@@ -285,10 +292,7 @@ void _printMovieList(struct movie *list)
 // output: stdout
 void printMovieMenu()
 {
-	printf("\n1. Show movies released in the specified year\n");
-	printf("2. Show hightest rated movie for each year\n");
-	printf("3. Show the title and year of release of all\n");
-	printf("   movies in a specified language\n");
+	printf("\n1. Select the file to process\n");
 	printf("4. Exit from the program\n\n");
 }
 
@@ -409,6 +413,88 @@ void _showByLanguage(struct movie *list)
 	}
 }
 
+void _findLargestFile()
+{
+	printf("find by largest file\n");
+}
+
+void _findSmallestFile()
+{
+	printf("find by smallest file\n");
+}
+
+// asks for the name of the file.
+// checks if file exists and writes err msg if the file 
+// is not found. Repeats this process until a file is 
+// found.
+// input:
+// output:
+void _specifyFile()
+{
+	printf("specify the file\n");
+	
+	DIR* currDir = opendir(".");
+	struct dirent *aDir;
+	struct stat dirStat;
+	char filename[] = "";
+	int file_descriptor;
+
+	file_descriptor = open(filename, O_RDWR | O_TRUNC, 0640);
+
+	if (file_descriptor < 0)
+	{
+		printf("failed to open \"%s\"\n", filename);
+		perror("Error");
+		exit(1);
+	}
+	
+}
+
+void _selectFile(struct movie *list)
+{
+	char str[2];
+	char *str1 = NULL;
+	int choice;
+	
+	printf("Which file do you want to process?\n");
+	printf("Enter 1 to pick the largest file\n");
+	printf("Enter 2 to pick the smallest file\n");
+	printf("Enter 3 to specify the name of a file\n");
+	printf("Enter a choice from 1 to 3: ");
+	// only expect one char to be entered. no more, no less.
+	scanf("%s", str);
+
+	str1 = malloc(sizeof(char));
+	strcpy(str1, str);
+
+	choice = atoi(str1);
+
+	while (str[1] != '\0' || (choice < 1 || choice > 3))
+	{
+		
+		strcpy(str, "");
+		choice = 0;
+
+		printf("Not a valid choice, try again.\n");
+		printf("Enter a choice between 1 and 3: ");
+		scanf("%s", str);
+		strcpy(str1, str);
+	
+		choice = atoi(str1);	
+		
+	}
+	free(str1);
+
+	switch (choice)
+	{
+		case 1: _findLargestFile(); break;
+		case 2: _findSmallestFile(); break;
+		case 3: _specifyFile(); break;
+		default: break;
+	}	
+	
+}
+
 // asks the user to enter a choice and gets the user input
 // input: none
 // output: an integer representing the valid user input.
@@ -419,7 +505,7 @@ int getMenuChoice()
 	char *str1 = NULL;
 	int choice;
 	
-	printf("Enter a choice from 1 to 4: ");
+	printf("Enter a choice 1 or 2: ");
 	scanf("%s", str);
 
 	str1 = malloc(sizeof(char));
@@ -427,14 +513,14 @@ int getMenuChoice()
 
 	choice = atoi(str1);
 
-	while (str[1] != '\0' || (choice < 1 || choice > 4))
+	while (str[1] != '\0' || (choice < 1 || choice > 2))
 	{
 		
 		strcpy(str, "");
 		choice = 0;
 
 		printf("Not a valid choice, try again.\n");
-		printf("Enter a choice from 1 to 4: ");
+		printf("Enter a choice 1 or 2: ");
 		scanf("%s", str);
 		strcpy(str1, str);
 	
@@ -449,16 +535,14 @@ int getMenuChoice()
 
 // calls the given function the corresponds to the menu
 // choice selected by the user.
-// input: an integer representing the movie menu choice and
+// input: an integer representing the file to process 
 // 	a linked list of movies.
 // output: the resulting output of the choices made.
 void printMenuChoices(int val, struct movie *list, struct movie *uList)
 {
 	switch(val)
 	{
-		case 1: _showByYear(list); break;
-		case 2: _showByRating(list, uList); break;
-		case 3: _showByLanguage(list); break; 	
+		case 1: _selectFile(list); break;
 		default: break;
 	}
 }
