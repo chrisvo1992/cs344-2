@@ -20,9 +20,11 @@
 
 /* see header files for function descriptions */
 
-int main(int argc, char *argv[])
+int main(void)
 {
 	int value = 0;
+
+	/*
 	int movieCount = 0;
 	int *mcPtr = &movieCount;
 	struct movie *sortedList = 0;
@@ -31,32 +33,34 @@ int main(int argc, char *argv[])
 	// for the languages in each movie
 	struct node *ref2 = 0;
 	struct node *ref3	= 0;
-
+	*/
+	/*
 	if (argc < 2)
 	{
 		printf("Provide a file to process.\n");
 		return 1;
 	}
-
 	struct movie *list = _processFile(argv[1], mcPtr);
 	sortedList = _mergeSort(list);
 	ref1 = sortedList;
+	*/
 	// create the unique year list for the 
 	// _sortByRating function
-	uniqueYears = _createUniqueYearList(sortedList);
+	//uniqueYears = _createUniqueYearList(sortedList);
 
-	printf("\nProcessed file: %s and parsed data for %u movies.\n",
-		argv[1], movieCount);
+	//printf("\nProcessed file: %s and parsed data for %u movies.\n",
+		//argv[1], movieCount);
 
 	while (value != 2)
 	{
 		printMovieMenu();
 		value = getMenuChoice();
-		printMenuChoices(value, sortedList, uniqueYears);
+		printMenuChoices(value);
 	}
 
 	printf("\n");
 
+	/*
 	while (sortedList != 0)
 	{
 		ref1 = sortedList;
@@ -80,6 +84,7 @@ int main(int argc, char *argv[])
 		uniqueYears = ref1->next;
 		free(ref1);
 	}
+	*/
 
 	return 0;
 }

@@ -9,6 +9,7 @@
 #include "movie_io.h"
 
 #define PREFIX "movies_"
+#define ONID "johnsal.movies."
 
 /****DESCRIPTION****/
 // - read a csv file as an arg to main
@@ -122,9 +123,64 @@ struct movie* _createMovie(char* line)
 
 // creates a linked list of movies, using
 // 	_createMovie as a helper function.
+// input: an csv file 
+// output: a linked list (unsorted) of movies.
+struct movie *_processFile(char* filePath)
+{
+	FILE* movieFile = fopen(filePath, "r");
+	
+	if (!movieFile)
+	{
+		printf("oh no\n");
+		perror("Failed to open file\n");
+		exit(EXIT_FAILURE);
+	}
+
+	size_t len = 0;
+	ssize_t read;
+	char* currLine = NULL;
+	struct movie* head = NULL;
+	struct movie* tail = NULL;
+
+	// read the first line and discard
+	read = getline(&currLine, &len, movieFile);
+
+	while ((read = getline(&currLine, &len, movieFile)) != -1)
+	{
+		// if the line is blank
+		if (currLine[0] == '\n') 
+		{
+			continue;
+		}
+		else 
+		{
+			struct movie *newNode = _createMovie(currLine);
+
+			// create the first node if empty
+			if (head == NULL)
+			{
+				head = newNode;
+				tail = newNode;
+			}
+			else
+			{
+				tail->next = newNode;
+				tail = newNode;
+			}
+		}
+	}
+	free(currLine);
+	fclose(movieFile);
+	return head;
+}
+
+
+// creates a linked list of movies, using
+// 	_createMovie as a helper function.
 // input: an csv file and an address reference to 
 // 	the number of movies read from the file.
 // output: a linked list (unsorted) of movies.
+/*
 struct movie *_processFile(const char* filePath, int *size)
 {
 	FILE* movieFile = fopen(filePath, "r");
@@ -177,6 +233,7 @@ struct movie *_processFile(const char* filePath, int *size)
 	fclose(movieFile);
 	return head;
 }
+*/
 
 // creates a list of unique years for use in the 
 // _sortByRating function. Reduces the repeated 
@@ -293,7 +350,7 @@ void _printMovieList(struct movie *list)
 void printMovieMenu()
 {
 	printf("\n1. Select the file to process\n");
-	printf("4. Exit from the program\n\n");
+	printf("2. Exit from the program\n\n");
 }
 
 // when movie menu option 1 is chosen, the user is
@@ -413,6 +470,86 @@ void _showByLanguage(struct movie *list)
 	}
 }
 
+void _createFilesByUniqueYear(const char *dirname, struct movie *uniqueList)
+{
+
+	// move into the dir <dirname>
+	int newDir = chdir(dirname);
+
+	/*
+	char *buf = 0;
+	char *cwd = getcwd(buf, malloc(sizeof(strlen(dirname + 1) * sizeof(char))));
+	printf("cwd: %s\n", cwd);
+	*/
+
+	FILE *newFile = 0;
+
+	char cstr[] = " "; 
+	sprintf(cstr, "%u", uniqueList->year);
+
+	printf("dir name: %s\n", dirname);
+
+	while (uniqueList != 0)
+	{
+		// create a new file
+		/*
+		if (list != 0)
+		{
+			while (list->year == uniqueList->year)
+			{
+				if (list->rating > uniqueList->rating)
+				{
+					uniqueList->title = list->title;
+					uniqueList->year = list->year;
+					uniqueList->rating = list->rating;
+				}
+				if (list->next != 0)
+				{
+					list = list->next;
+				} else {break;}
+			}
+		}
+		*/
+		printf("%u ", uniqueList->year);
+		printf("%0.1f ",uniqueList->rating);
+		printf(uniqueList->title);
+		printf("\n");
+		uniqueList = uniqueList->next;
+	}
+}
+
+void _readFile(struct movie *list, struct movie *uniqueList)
+{
+
+	//DIR* currDir = opendir(".");
+	int newDir;
+	char str[] = ONID;
+	struct dirent *aDir;
+	struct stat dirStat;
+	
+	strcat(str,"12345\0");
+
+	// create a new dir named <onid>.movies.<rand_num>
+	// with permissions set to 0750
+	
+	newDir = mkdir(str, 0750);	
+	
+	// print the name of the dir 
+	
+	// parse data to find out the movies released in each year. 
+
+	// create a file named <year>.txt for each year in 
+	// which >= 1 movie was released
+	// and set each file permission to 0640
+	
+	_createFilesByUniqueYear(str, uniqueList);
+
+	// in each file, write the titles of every movie with 
+	// the same year on a single line.
+	//
+	//
+}
+
 void _findLargestFile()
 {
 	printf("find by largest file\n");
@@ -431,26 +568,68 @@ void _findSmallestFile()
 // output:
 void _specifyFile()
 {
-	printf("specify the file\n");
-	
-	DIR* currDir = opendir(".");
-	struct dirent *aDir;
-	struct stat dirStat;
+	struct movie *list = 0;
+	struct movie *sortedList = 0;
+	struct movie *uniqueYears = 0;
+	struct movie *ref1 = 0;
+	// for the languages in each movie
+	struct node *ref2 = 0;
+	struct node *ref3	= 0;
+
 	char filename[] = "";
-	int file_descriptor;
 
-	file_descriptor = open(filename, O_RDWR | O_TRUNC, 0640);
+	int file_descriptor = -1;
 
-	if (file_descriptor < 0)
+	while (file_descriptor < 0)
 	{
-		printf("failed to open \"%s\"\n", filename);
-		perror("Error");
-		exit(1);
+		printf("Enter the complete filename: %s", filename);
+		scanf("%s", filename);
+
+		file_descriptor = open(filename, O_RDONLY, 0440);
+		if (file_descriptor < 0)
+		{
+			strcpy(filename, "");
+			printf("failed to open \"%s\"\n", filename);
+			perror("Error");
+		}
 	}
-	
+
+	printf("Now processing the chosen file named %s\n", filename);
+
+	list = _processFile(filename);
+	sortedList = _mergeSort(list);
+	uniqueYears = _createUniqueYearList(sortedList);
+
+	close(file_descriptor);
+
+	_readFile(sortedList, uniqueYears);
+
+	while (sortedList != 0)
+	{
+		ref1 = sortedList;
+		free(ref1->title);
+		ref2 = sortedList->languages;
+		while (ref2 != 0)
+		{
+			ref3 = ref2;
+			free(ref3->val);		
+			free(ref3);
+			ref2 = ref2->next;
+		}
+		free(ref1);
+		sortedList = sortedList->next;
+	}
+	free(sortedList);
+
+	while (uniqueYears != 0)
+	{
+		ref1 = uniqueYears;
+		uniqueYears = ref1->next;
+		free(ref1);
+	}
 }
 
-void _selectFile(struct movie *list)
+void _selectFile()
 {
 	char str[2];
 	char *str1 = NULL;
@@ -535,14 +714,13 @@ int getMenuChoice()
 
 // calls the given function the corresponds to the menu
 // choice selected by the user.
-// input: an integer representing the file to process 
-// 	a linked list of movies.
+// input: an integer representing the movie menu choice
 // output: the resulting output of the choices made.
-void printMenuChoices(int val, struct movie *list, struct movie *uList)
+void printMenuChoices(int val)
 {
 	switch(val)
 	{
-		case 1: _selectFile(list); break;
+		case 1: _selectFile(); break;
 		default: break;
 	}
 }

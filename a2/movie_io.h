@@ -25,10 +25,16 @@ struct movie* _createMovie(char*);
 
 // creates a linked list of movies, using
 // 	_createMovie as a helper function.
+// input: an csv file
+// output: a linked list (unsorted) of movies.
+struct movie* _processFile(char*);
+
+// creates a linked list of movies, using
+// 	_createMovie as a helper function.
 // input: an csv file and an address reference to 
 // 	the number of movies read from the file.
 // output: a linked list (unsorted) of movies.
-struct movie* _processFile(const char*, int*);
+//struct movie* _processFile(const char*, int*);
 
 // creates a list of unique years for use in the 
 // _sortByRating function. Reduces the repeated 
@@ -94,6 +100,15 @@ void _showByRating(struct movie*, struct movie*);
 // output: stdout of movies that are in the language entered by the user.
 void _showByLanguage(struct movie*);
 
+// creates files for each year a movie was released
+void _createFilesByUniqueYear(const char*, struct movie *);
+
+// creates a directory and parses the file(list) for all movies
+// created each year. creates a file for each year a movie was
+// released. Each file prints all the movies released in the 
+// same year on the same line. 
+void _readFile(struct movie*, struct movie*);
+
 void _findLargestFile();
 
 void _findSmallestFile();
@@ -102,16 +117,15 @@ void _specifyFile();
 
 // the user is presented with 3 further choices about which
 // file to process
-// input: list
+// input: none 
 // output: hmm
-void _selectFile(struct movie *list);
+void _selectFile();
 
 // calls the given function the corresponds to the menu
 // choice selected by the user.
-// input: an integer representing the movie menu choice and
-// 	a linked list of movies.
+// input: an integer representing the movie menu choice
 // output: the resulting output of the choices made.
-void printMenuChoices(int, struct movie*, struct movie*);
+void printMenuChoices(int);
 
 // asks the user to enter a choice and gets the user input
 // input: none
