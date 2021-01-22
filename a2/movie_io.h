@@ -101,7 +101,7 @@ void _showByRating(struct movie*, struct movie*);
 void _showByLanguage(struct movie*);
 
 // creates files for each year a movie was released
-void _createFilesByUniqueYear(const char*, struct movie *);
+void _createFilesByUniqueYear(const char*,struct movie*, struct movie*);
 
 // creates a directory and parses the file(list) for all movies
 // created each year. creates a file for each year a movie was

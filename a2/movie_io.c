@@ -470,28 +470,30 @@ void _showByLanguage(struct movie *list)
 	}
 }
 
-void _createFilesByUniqueYear(const char *dirname, struct movie *uniqueList)
+void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct movie *uniqueList)
 {
-
+	FILE *newFile = 0;
+	char cstr[9]; 
 	// move into the dir <dirname>
 	int newDir = chdir(dirname);
 
-	/*
+	/* //for debugging only
 	char *buf = 0;
 	char *cwd = getcwd(buf, malloc(sizeof(strlen(dirname + 1) * sizeof(char))));
 	printf("cwd: %s\n", cwd);
 	*/
 
-	FILE *newFile = 0;
-
-	char cstr[] = " "; 
-	sprintf(cstr, "%u", uniqueList->year);
-
-	printf("dir name: %s\n", dirname);
-
+	// parse data to find out the movies released in each year. 
+	// create a file named <year>.txt for each year in 
+	// which >= 1 movie was released
+	// and set each file permission to 0640
+	
 	while (uniqueList != 0)
 	{
-		// create a new file
+		// create a new file <year>.txt
+		sprintf(cstr, "%d", uniqueList->year);
+		strcat(cstr, ".txt");
+   	newFile = fopen(cstr, "a+");
 		/*
 		if (list != 0)
 		{
@@ -535,14 +537,15 @@ void _readFile(struct movie *list, struct movie *uniqueList)
 	newDir = mkdir(str, 0750);	
 	
 	// print the name of the dir 
-	
-	// parse data to find out the movies released in each year. 
+	printf("Created directory with name ");
+	printf(" %s\n", str);
 
+	// parse data to find out the movies released in each year. 
 	// create a file named <year>.txt for each year in 
 	// which >= 1 movie was released
 	// and set each file permission to 0640
 	
-	_createFilesByUniqueYear(str, uniqueList);
+	_createFilesByUniqueYear(str, list, uniqueList);
 
 	// in each file, write the titles of every movie with 
 	// the same year on a single line.
