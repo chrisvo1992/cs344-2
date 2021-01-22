@@ -499,16 +499,13 @@ void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct mov
 		{
 			while (list->year == uniqueList->year)
 			{
-				//if (list->rating > uniqueList->rating)
-				//{
-					fputs(list->title, newFile);
-					fputs("\n", newFile);
-					/*
-					uniqueList->title = list->title;
-					uniqueList->year = list->year;
-					uniqueList->rating = list->rating;
-					*/
-				//}
+				fputs(list->title, newFile);
+				fputs("\n", newFile);
+				if (chmod(cstr, 0640) < 0)
+				{
+					perror("error changing file permissions\n");
+					break;
+				}
 				if (list->next != 0)
 				{
 					list = list->next;
