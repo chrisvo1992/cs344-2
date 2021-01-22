@@ -125,8 +125,10 @@ struct movie* _createMovie(char* line)
 // 	_createMovie as a helper function.
 // input: an csv file 
 // output: a linked list (unsorted) of movies.
-struct movie *_processFile(char* filePath)
+//struct movie *_processFile(char* filePath)
+struct movie *_processFile(FILE* movieFile)
 {
+	/*
 	FILE* movieFile = fopen(filePath, "r");
 	
 	if (!movieFile)
@@ -135,6 +137,7 @@ struct movie *_processFile(char* filePath)
 		perror("Failed to open file\n");
 		exit(EXIT_FAILURE);
 	}
+	*/
 
 	size_t len = 0;
 	ssize_t read;
@@ -170,7 +173,7 @@ struct movie *_processFile(char* filePath)
 		}
 	}
 	free(currLine);
-	fclose(movieFile);
+	//fclose(movieFile);
 	return head;
 }
 
@@ -512,12 +515,6 @@ void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct mov
 				} else {break;}
 			}
 		}
-		/*
-		printf("%u ", uniqueList->year);
-		printf("%0.1f ",uniqueList->rating);
-		printf(uniqueList->title);
-		printf("\n");
-		*/
 		uniqueList = uniqueList->next;
 	}
 }
@@ -535,8 +532,17 @@ void _readFile(struct movie *list, struct movie *uniqueList)
 
 	// create a new dir named <onid>.movies.<rand_num>
 	// with permissions set to 0750
-	
-	newDir = mkdir(str, 0750);	
+	newDir = mkdir(str, 0750);
+
+	while (newDir < 0)
+	{
+		perror("Error");
+		strcpy(str, ONID);
+		strcat(str,"54321\0");	
+	  newDir = mkdir(str, 0750);
+	}
+
+	//newDir = mkdir(str, 0750);	
 	
 	// print the name of the dir 
 	printf("Created directory with name ");
@@ -551,8 +557,9 @@ void _readFile(struct movie *list, struct movie *uniqueList)
 
 	// in each file, write the titles of every movie with 
 	// the same year on a single line.
-	//
-	//
+	
+	// go back to the root dir
+	chdir("..");
 }
 
 void _findLargestFile()
@@ -573,6 +580,15 @@ void _findSmallestFile()
 // output:
 void _specifyFile()
 {
+	FILE* movieFile;
+	/*
+	if (!movieFile)
+	{
+		printf("oh no\n");
+		perror("Failed to open file\n");
+		exit(EXIT_FAILURE);
+	}
+	*/
 	struct movie *list = 0;
 	struct movie *sortedList = 0;
 	struct movie *uniqueYears = 0;
@@ -580,35 +596,55 @@ void _specifyFile()
 	// for the languages in each movie
 	struct node *ref2 = 0;
 	struct node *ref3	= 0;
+	struct node *ref4 = 0;
 
-	char filename[] = "";
+	char filename[21];
 
-	int file_descriptor = -1;
+	printf("Enter the complete filename: ");
+	scanf("%s", filename);
+	movieFile = fopen(filename, "r");
 
-	while (file_descriptor < 0)
+	while (!movieFile)
 	{
-		printf("Enter the complete filename: %s", filename);
+		perror("Error");	
+		system("pwd");
+		strcpy(filename, "");
+		printf("Enter the complete filename: ");
 		scanf("%s", filename);
-
-		file_descriptor = open(filename, O_RDONLY, 0440);
-		if (file_descriptor < 0)
-		{
-			strcpy(filename, "");
-			printf("failed to open \"%s\"\n", filename);
-			perror("Error");
-		}
+		movieFile = fopen(filename, "r");
 	}
 
+	/*
+	int file_descriptor = open(filename, O_RDONLY);
+
+	while (file_descriptor < 0)
+	{		
+		printf("Failed to open \"%s\"\n", filename);
+		perror("Error");
+		strcpy(filename, "");
+		printf("Enter the complete filename: ");
+		scanf("%s", filename);
+		file_descriptor = open(filename, O_RDONLY);
+	}
+
+	lseek(file_descriptor, 0, SEEK_SET);
+	close(file_descriptor);
+	*/
 	printf("Now processing the chosen file named %s\n", filename);
 
-	list = _processFile(filename);
+	list = _processFile(movieFile);
 	sortedList = _mergeSort(list);
 	uniqueYears = _createUniqueYearList(sortedList);
+	ref1 = sortedList;
+	ref4 = uniqueYears;
 
-	close(file_descriptor);
+	fclose(movieFile);
 
 	_readFile(sortedList, uniqueYears);
 
+	sortedList = ref1;
+
+	///*
 	while (sortedList != 0)
 	{
 		ref1 = sortedList;
@@ -617,7 +653,7 @@ void _specifyFile()
 		while (ref2 != 0)
 		{
 			ref3 = ref2;
-			free(ref3->val);		
+			free(ref3->val);// this is were it seg faults
 			free(ref3);
 			ref2 = ref2->next;
 		}
@@ -626,12 +662,15 @@ void _specifyFile()
 	}
 	free(sortedList);
 
+	uniqueYears = ref4;
+
 	while (uniqueYears != 0)
 	{
 		ref1 = uniqueYears;
 		uniqueYears = ref1->next;
 		free(ref1);
 	}
+	//*/
 }
 
 void _selectFile()

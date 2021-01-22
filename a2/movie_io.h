@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "movie_algo.h"
 
 // used for the list of languages for each movie
@@ -27,7 +28,8 @@ struct movie* _createMovie(char*);
 // 	_createMovie as a helper function.
 // input: an csv file
 // output: a linked list (unsorted) of movies.
-struct movie* _processFile(char*);
+//struct movie* _processFile(char*);
+struct movie* _processFile(FILE*);
 
 // creates a linked list of movies, using
 // 	_createMovie as a helper function.
