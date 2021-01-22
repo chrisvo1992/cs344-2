@@ -494,28 +494,33 @@ void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct mov
 		sprintf(cstr, "%d", uniqueList->year);
 		strcat(cstr, ".txt");
    	newFile = fopen(cstr, "a+");
-		/*
+
 		if (list != 0)
 		{
 			while (list->year == uniqueList->year)
 			{
-				if (list->rating > uniqueList->rating)
-				{
+				//if (list->rating > uniqueList->rating)
+				//{
+					fputs(list->title, newFile);
+					fputs("\n", newFile);
+					/*
 					uniqueList->title = list->title;
 					uniqueList->year = list->year;
 					uniqueList->rating = list->rating;
-				}
+					*/
+				//}
 				if (list->next != 0)
 				{
 					list = list->next;
 				} else {break;}
 			}
 		}
-		*/
+		/*
 		printf("%u ", uniqueList->year);
 		printf("%0.1f ",uniqueList->rating);
 		printf(uniqueList->title);
 		printf("\n");
+		*/
 		uniqueList = uniqueList->next;
 	}
 }
