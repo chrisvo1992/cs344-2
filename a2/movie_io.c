@@ -527,8 +527,13 @@ void _readFile(struct movie *list, struct movie *uniqueList)
 	char str[] = ONID;
 	struct dirent *aDir;
 	struct stat dirStat;
-	
-	strcat(str,"12345\0");
+	unsigned int max = 99999;
+	int randNum = rand() % max; 
+	char *numStr = malloc(sizeof(char) * 6);
+	numStr[5] = '\0';
+
+	sprintf(numStr, "%d", randNum);
+  strcat(str, numStr);	
 
 	// create a new dir named <onid>.movies.<rand_num>
 	// with permissions set to 0750
@@ -538,7 +543,10 @@ void _readFile(struct movie *list, struct movie *uniqueList)
 	{
 		perror("Error");
 		strcpy(str, ONID);
-		strcat(str,"54321\0");	
+	  randNum = rand() % max;
+		sprintf(numStr, "%d", randNum);
+		numStr[5] = '\0';
+		strcat(str, numStr);	
 	  newDir = mkdir(str, 0750);
 	}
 
@@ -560,11 +568,40 @@ void _readFile(struct movie *list, struct movie *uniqueList)
 	
 	// go back to the root dir
 	chdir("..");
+	free(numStr);
 }
 
 void _findLargestFile()
 {
 	printf("find by largest file\n");
+ 
+
+	DIR* currDir = opendir(".");
+  struct dirent *aDir;
+  time_t lastModifTime;
+  struct stat dirStat;
+  int i = 0;
+  char entryName[256];
+  int file_descriptor;
+  char* newFilePath = "./newFile.txt";
+
+	while ((aDir = readdir(currDir)) != NULL)
+  {
+    if (strncmp(PREFIX, aDir->d_name, strlen(PREFIX)) == 0)
+    {
+      stat(aDir->d_name, &dirStat);
+
+      if (i == 0 || difftime(dirStat.st_mtime, lastModifTime) >0)
+      {
+        lastModifTime = dirStat.st_mtime;
+        memset(entryName, '\0', sizeof(entryName));
+        strcpy(entryName, aDir->d_name);
+      }
+      i++;
+    }
+    printf("%s %lu\n", aDir->d_name, aDir->d_ino);
+	}	
+	closedir(currDir);
 }
 
 void _findSmallestFile()
@@ -593,12 +630,12 @@ void _specifyFile()
 	struct movie *sortedList = 0;
 	struct movie *uniqueYears = 0;
 	struct movie *ref1 = 0;
+	struct movie *ref4 = 0;
 	// for the languages in each movie
 	struct node *ref2 = 0;
 	struct node *ref3	= 0;
-	struct node *ref4 = 0;
 
-	char filename[21];
+	char filename[] = "";
 
 	printf("Enter the complete filename: ");
 	scanf("%s", filename);
@@ -614,22 +651,6 @@ void _specifyFile()
 		movieFile = fopen(filename, "r");
 	}
 
-	/*
-	int file_descriptor = open(filename, O_RDONLY);
-
-	while (file_descriptor < 0)
-	{		
-		printf("Failed to open \"%s\"\n", filename);
-		perror("Error");
-		strcpy(filename, "");
-		printf("Enter the complete filename: ");
-		scanf("%s", filename);
-		file_descriptor = open(filename, O_RDONLY);
-	}
-
-	lseek(file_descriptor, 0, SEEK_SET);
-	close(file_descriptor);
-	*/
 	printf("Now processing the chosen file named %s\n", filename);
 
 	list = _processFile(movieFile);
@@ -644,7 +665,7 @@ void _specifyFile()
 
 	sortedList = ref1;
 
-	///*
+	/*
 	while (sortedList != 0)
 	{
 		ref1 = sortedList;
@@ -653,10 +674,12 @@ void _specifyFile()
 		while (ref2 != 0)
 		{
 			ref3 = ref2;
-			free(ref3->val);// this is were it seg faults
-			free(ref3);
+			//free(ref3->val);// this is were it seg faults
+			printf("ref3->val: %s ", ref3->val);
+			//free(ref3);
 			ref2 = ref2->next;
 		}
+		printf("\n");
 		free(ref1);
 		sortedList = sortedList->next;
 	}
@@ -670,7 +693,7 @@ void _specifyFile()
 		uniqueYears = ref1->next;
 		free(ref1);
 	}
-	//*/
+	*/
 }
 
 void _selectFile()
@@ -687,7 +710,7 @@ void _selectFile()
 	// only expect one char to be entered. no more, no less.
 	scanf("%s", str);
 
-	str1 = malloc(sizeof(char));
+	str1 = malloc(sizeof(char) * 2);
 	strcpy(str1, str);
 
 	choice = atoi(str1);
@@ -731,7 +754,7 @@ int getMenuChoice()
 	printf("Enter a choice 1 or 2: ");
 	scanf("%s", str);
 
-	str1 = malloc(sizeof(char));
+	str1 = malloc(sizeof(char) * 2);
 	strcpy(str1, str);
 
 	choice = atoi(str1);
