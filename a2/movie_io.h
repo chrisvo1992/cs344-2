@@ -104,12 +104,16 @@ void _showByLanguage(struct movie*);
 
 // creates files for each year a movie was released
 void _createFilesByUniqueYear(const char*,struct movie*, struct movie*);
-
 // creates a directory and parses the file(list) for all movies
 // created each year. creates a file for each year a movie was
 // released. Each file prints all the movies released in the 
 // same year on the same line. 
 void _readFile(struct movie*, struct movie*);
+
+// auto processes the file
+// input: the file to process
+// output: the answer to life
+void _autoProcessFile(char*); 
 
 void _findLargestFile();
 

@@ -7,7 +7,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "movie_io.h"
+#include <time.h>
 
+#define POSTFIX ".csv"
 #define PREFIX "movies_"
 #define ONID "johnsal.movies."
 
@@ -522,13 +524,13 @@ void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct mov
 void _readFile(struct movie *list, struct movie *uniqueList)
 {
 
-	//DIR* currDir = opendir(".");
+	srand(time(0));
 	int newDir;
 	char str[] = ONID;
 	struct dirent *aDir;
 	struct stat dirStat;
 	unsigned int max = 99999;
-	int randNum = rand() % max; 
+	int randNum = rand() % (max + 1); 
 	char *numStr = malloc(sizeof(char) * 6);
 	numStr[5] = '\0';
 
@@ -571,43 +573,213 @@ void _readFile(struct movie *list, struct movie *uniqueList)
 	free(numStr);
 }
 
+// autoprocess file name
+void _autoProcessFile(char *str)
+{
+	FILE* movieFile;
+	struct movie *list = 0;
+	struct movie *sortedList = 0;
+	struct movie *uniqueYears = 0;
+	struct movie *ref1 = 0;
+	struct movie *ref4 = 0;
+	// for the languages in each movie
+	struct node *ref2 = 0;
+	struct node *ref3	= 0;
+
+	char filename[] = "";
+
+	//printf("Enter the complete filename: ");
+	//scanf("%s", filename);
+	movieFile = fopen(str, "r");
+
+	while (!movieFile)
+	{
+		perror("Error");	
+		system("pwd");
+		strcpy(filename, "");
+		printf("Enter the complete filename: ");
+		scanf("%s", filename);
+		movieFile = fopen(filename, "r");
+	}
+
+	printf("Now processing the chosen file named %s\n", str);
+
+	list = _processFile(movieFile);
+	sortedList = _mergeSort(list);
+	uniqueYears = _createUniqueYearList(sortedList);
+	ref1 = sortedList;
+	ref4 = uniqueYears;
+
+	fclose(movieFile);
+
+	_readFile(sortedList, uniqueYears);
+
+	sortedList = ref1;
+
+	/*
+	while (sortedList != 0)
+	{
+		ref1 = sortedList;
+		free(ref1->title);
+		ref2 = sortedList->languages;
+		while (ref2 != 0)
+		{
+			ref3 = ref2;
+			//free(ref3->val);// this is were it seg faults
+			printf("ref3->val: %s ", ref3->val);
+			//free(ref3);
+			ref2 = ref2->next;
+		}
+		printf("\n");
+		free(ref1);
+		sortedList = sortedList->next;
+	}
+	free(sortedList);
+
+	uniqueYears = ref4;
+
+	while (uniqueYears != 0)
+	{
+		ref1 = uniqueYears;
+		uniqueYears = ref1->next;
+		free(ref1);
+	}
+	*/
+}
+
 void _findLargestFile()
 {
-	printf("find by largest file\n");
- 
-
 	DIR* currDir = opendir(".");
   struct dirent *aDir;
-  time_t lastModifTime;
-  struct stat dirStat;
-  int i = 0;
-  char entryName[256];
-  int file_descriptor;
-  char* newFilePath = "./newFile.txt";
+	struct stat sb;
+  int i,j = 0;
+  char ext[5] = ".csv";
+	char buf[5];
+	char *strBuf = malloc(sizeof(char));
+
+	unsigned long int largest = 0;
+
 
 	while ((aDir = readdir(currDir)) != NULL)
   {
-    if (strncmp(PREFIX, aDir->d_name, strlen(PREFIX)) == 0)
-    {
-      stat(aDir->d_name, &dirStat);
 
-      if (i == 0 || difftime(dirStat.st_mtime, lastModifTime) >0)
-      {
-        lastModifTime = dirStat.st_mtime;
-        memset(entryName, '\0', sizeof(entryName));
-        strcpy(entryName, aDir->d_name);
-      }
-      i++;
+		// ignoring current
+		if (!strcmp(aDir->d_name, "."))
+		{
+			continue;	
+		}
+		// ignore the parent
+		if (!strcmp(aDir->d_name, ".."))
+		{
+			continue;	
+		}
+
+		// read the extension type for each file
+		for (i = strlen(aDir->d_name) - strlen(POSTFIX); i <= strlen(aDir->d_name); i++)
+    {
+			buf[j] = aDir->d_name[i];
+			j++;
     }
-    printf("%s %lu\n", aDir->d_name, aDir->d_ino);
+
+		j = 0;
+
+		// find the files beginning with the PREFIX
+		if (strncmp(PREFIX, aDir->d_name, strlen(PREFIX)) == 0)
+		{	
+			// find the size of the file
+			if (strcmp(buf, ext) == 0)
+			{
+				stat(aDir->d_name, &sb);
+				if (sb.st_size > largest)
+				{
+					largest = sb.st_size;
+					free(strBuf);
+					strBuf = malloc(sizeof(char) * strlen(aDir->d_name) + 1);
+					strcpy(strBuf, aDir->d_name);
+				}
+				//printf("filename: %s, bytes: %lu\n", aDir->d_name, sb.st_size);
+			}
+		}
+		
 	}	
+	
+	printf("The largest file is: %s %lu\n", strBuf, largest);
+
+	_autoProcessFile(strBuf);
+
 	closedir(currDir);
 }
 
 void _findSmallestFile()
 {
-	printf("find by smallest file\n");
+	DIR* currDir = opendir(".");
+  struct dirent *aDir;
+	struct stat sb;
+  int i,j = 0;
+  char ext[5] = ".csv";
+	char buf[5];
+	char *strBuf = malloc(sizeof(char));
+
+	unsigned long int smallest = 0;
+
+
+	while ((aDir = readdir(currDir)) != NULL)
+  {
+
+		// ignoring current
+		if (!strcmp(aDir->d_name, "."))
+		{
+			continue;	
+		}
+		// ignore the parent
+		if (!strcmp(aDir->d_name, ".."))
+		{
+			continue;	
+		}
+
+		// read the extension type for each file
+		for (i = strlen(aDir->d_name) - strlen(POSTFIX); i <= strlen(aDir->d_name); i++)
+    {
+			buf[j] = aDir->d_name[i];
+			j++;
+    }
+
+		j = 0;
+
+		// find the files beginning with the PREFIX
+		if (strncmp(PREFIX, aDir->d_name, strlen(PREFIX)) == 0)
+		{	
+			// find the size of the file
+			if (strcmp(buf, ext) == 0)
+			{
+				stat(aDir->d_name, &sb);
+
+				// have to start somewhere
+				if (smallest == 0)
+				{
+					smallest = sb.st_size;	
+				}
+
+				if (sb.st_size < smallest)
+				{
+					smallest = sb.st_size;
+					free(strBuf);
+					strBuf = malloc(sizeof(char) * strlen(aDir->d_name) + 1);
+					strcpy(strBuf, aDir->d_name);
+				}
+				//printf("filename: %s, bytes: %lu\n", aDir->d_name, sb.st_size);
+			}
+		}
+		
+	}	
+	
+	printf("The smallest file is: %s %lu\n", strBuf, smallest);
+
+	_autoProcessFile(strBuf);
+
+	closedir(currDir);
 }
+
 
 // asks for the name of the file.
 // checks if file exists and writes err msg if the file 
@@ -618,14 +790,6 @@ void _findSmallestFile()
 void _specifyFile()
 {
 	FILE* movieFile;
-	/*
-	if (!movieFile)
-	{
-		printf("oh no\n");
-		perror("Failed to open file\n");
-		exit(EXIT_FAILURE);
-	}
-	*/
 	struct movie *list = 0;
 	struct movie *sortedList = 0;
 	struct movie *uniqueYears = 0;
