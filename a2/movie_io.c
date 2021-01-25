@@ -99,8 +99,7 @@ struct movie* _createMovie(char* line)
 	// save the starting point of the list
 	langList = newLang;
 
-	// since i is only used in loops, it does not need
-	// to be reset, *it seems*.
+	// reset
 	i = 0;
 
 	while (i < colonCount)
@@ -118,9 +117,46 @@ struct movie* _createMovie(char* line)
 	// point the list of languages to the movie language list
 	currMovie->languages = langList;
 
-	currMovie->next = NULL;
+	currMovie->next = 0;
 	
 	return currMovie;
+}
+
+// destroys movies
+void _destroyMovies(struct movie *list)
+{
+	struct movie *ref1 = 0;
+	struct movie *ref2 = 0;
+	struct node *ref3 = 0;
+	struct node *ref4 = 0;
+	/*
+	while (list != 0)
+	{
+		ref1 = list;
+		free(ref1->title);
+		ref3 = list->languages;
+		while (ref3 != 0)
+		{
+			ref4 = ref3;
+			//free(ref3->val);// this is were it seg faults
+			//printf("ref3->val: %s ", ref3->val);
+			free(ref3);
+			ref3 = ref4->next;
+		}
+		free(ref1);
+		list = list->next;
+	}
+	free(list);
+	//*/
+
+	/*
+	while (list != 0)
+	{
+		ref1 = list;
+		list = ref1->next;
+		free(ref1);
+	}
+	*/
 }
 
 // creates a linked list of movies, using
@@ -179,174 +215,112 @@ struct movie *_processFile(FILE* movieFile)
 	return head;
 }
 
-
-// creates a linked list of movies, using
-// 	_createMovie as a helper function.
-// input: an csv file and an address reference to 
-// 	the number of movies read from the file.
-// output: a linked list (unsorted) of movies.
-/*
-struct movie *_processFile(const char* filePath, int *size)
-{
-	FILE* movieFile = fopen(filePath, "r");
-	
-	if (!movieFile)
-	{
-		printf("oh no\n");
-		perror("Failed to open file\n");
-		exit(EXIT_FAILURE);
-	}
-
-	size_t len = 0;
-	ssize_t read;
-	char* currLine = NULL;
-	struct movie* head = NULL;
-	struct movie* tail = NULL;
-
-	// read the first line and discard
-	read = getline(&currLine, &len, movieFile);
-
-	while ((read = getline(&currLine, &len, movieFile)) != -1)
-	{
-		// if the line is blank
-		if (currLine[0] == '\n') 
-		{
-			continue;
-		}
-		else 
-		{
-			struct movie *newNode = _createMovie(currLine);
-
-			// used as a reference to keep track of the number of 
-			// movies in the provided file.
-			(*size)++;
-
-			// create the first node if empty
-			if (head == NULL)
-			{
-				head = newNode;
-				tail = newNode;
-			}
-			else
-			{
-				tail->next = newNode;
-				tail = newNode;
-			}
-		}
-	}
-	free(currLine);
-	fclose(movieFile);
-	return head;
-}
-*/
-
 // creates a list of unique years for use in the 
 // _sortByRating function. Reduces the repeated 
 // allocation of memory when option 2 is chosen.
-struct movie* _createUniqueYearList(struct movie* list)
+struct movie* _createUniqueYearFiles(const char *dirname, struct movie* list)
 {
-	struct movie *uniqueYears = 0;
-	struct movie *tempNode = 0;
-	struct movie *newNode = 0;
+	FILE *newFile = 0;
+	char cstr[9]; 
+	// move into the dir <dirname>
+	int newDir = chdir(dirname);
+	unsigned int currYear = list->year;
+	struct movie *ref = list;
+
+	//struct movie *uniqueYears = 0;
+	//struct movie *tempNode = 0;
+	//struct movie *newNode = 0;
 
 	// The list is presorted in asc order, therefore the first
 	// value read is assigned to the first node in the uniqueYear
 	// linked list.
 	
-	newNode = malloc(sizeof(struct movie));
-	newNode->year = list->year;
+	//newNode = malloc(sizeof(struct movie));
+	/*newNode->year = list->year;
 	newNode->title = list->title;
 	newNode->rating = list->rating;
 	newNode->next = 0;
 	uniqueYears = newNode;
+	*/
 
 	while (list != 0)
 	{
-		if (newNode->year != list->year)
+		if (currYear != list->year)
 		{
-			tempNode = newNode;
-			newNode = malloc(sizeof(struct movie));
-			tempNode->next = newNode;
-			newNode->title = list->title;
-			newNode->year = list->year;
-			newNode->rating = list->rating;
-			newNode->next = 0;
+			// update the year
+			currYear = list->year;
+			// create a new file <year>.txt
+			sprintf(cstr, "%d", list->year);
+			strcat(cstr, ".txt");
+   		newFile = fopen(cstr, "a+");
+			if (list != 0)
+			{
+				while (currYear == list->year)
+				{
+					fputs(list->title, newFile);
+					fputs("\n", newFile);
+					if (chmod(cstr, 0640) < 0)
+					{
+						perror("error changing file permissions\n");
+						break;
+					}
+					if (list->next != 0)
+					{
+						list = list->next;
+					} else {break;}
+				}
+			}
 		}
 		list = list->next;
 	}
 
-	return uniqueYears;
-}
+	/*
+	FILE *newFile = 0;
+	char cstr[9]; 
+	// move into the dir <dirname>
+	int newDir = chdir(dirname);
 
-// finds a string within a linked list of lang nodes.
-// input: the string being searched for 
-// 	and the string being searched.
-// output: int representing true or false.
-int _findStr(char const *str, char const *subStr)
-{
-	// lazy check of the user input
-	char *pos = strstr(str, subStr);
+	//for debugging only
+	//char *buf = 0;
+	//char *cwd = getcwd(buf, malloc(sizeof(strlen(dirname + 1) * sizeof(char))));
+	//printf("cwd: %s\n", cwd);
 
-	// strstr return true for substrings as well as
-	// substrings of substrings. 
-	// if the user input a str that is the length of the 
-	// language and it matches
-	if (pos && strlen(str) == strlen(subStr))
+	// parse data to find out the movies released in each year. 
+	// create a file named <year>.txt for each year in 
+	// which >= 1 movie was released
+	// and set each file permission to 0640
+	
+	while (uniqueList != 0)
 	{
-		return 1;
+		// create a new file <year>.txt
+		sprintf(cstr, "%d", uniqueList->year);
+		strcat(cstr, ".txt");
+   	newFile = fopen(cstr, "a+");
+
+		if (list != 0)
+		{
+			while (list->year == uniqueList->year)
+			{
+				fputs(list->title, newFile);
+				fputs("\n", newFile);
+				if (chmod(cstr, 0640) < 0)
+				{
+					perror("error changing file permissions\n");
+					break;
+				}
+				if (list->next != 0)
+				{
+					list = list->next;
+				} else {break;}
+			}
+		}
+		uniqueList = uniqueList->next;
 	}
-	else
-	{
-		return 0;
-	}	
+	*/
+	list = ref;
+	return list;
 }
 
-// prints the list of languages for that movie
-// input: a list of languages 
-// output: stdout
-void _printLanguages(struct node *langs)
-{
-	while (langs != 0)
-	{
-		printf("%s ", langs->val);	
-		langs = langs->next;
-	}
-}
-
-// prints a node in the linked list of movies
-// input: a linked list of movies
-// output: stdout
-void _printMovie(struct movie *aMovie)
-{
-	struct node *languages = aMovie->languages;
-
-	printf("%s, %d",
-		aMovie->title,
-		aMovie->year);
-	_printLanguages(languages),
-	printf("%f", aMovie->rating);
-}
-
-// prints the linked list of movies by title only
-// input: a linked list of movies, title only
-// output: stdout
-void _printByTitle(struct movie *aMovie)
-{
-	printf("%s\n", aMovie->title);
-}
-
-// prints the entire linked list of movies,
-// using _printMovie as a helper function.
-// input: a linked list of movies
-// output: stdout
-void _printMovieList(struct movie *list)
-{
-	while (list != NULL)
-	{
-		_printMovie(list);
-		list = list->next;
-	}
-}
 
 // prints the menu instructions for the user
 // to follow.
@@ -358,123 +332,9 @@ void printMovieMenu()
 	printf("2. Exit from the program\n\n");
 }
 
-// when movie menu option 1 is chosen, the user is
-// asked what year they would like to see movies for.
-// input: a linked list of movies
-// output: a list of movies created that match the 
-// 	year the user enters to stdout.
-void _showByYear(struct movie *list)
-{
-	int value = 0;
-	int resultCount = 0;
-	int input;	
 
-	printf("\nEnter the year for which you want to see movies: ");
-
-	scanf("%d", &input);
-
-	value = input;
-
-	while (list != NULL)
-	{
-		if (list->year == value)
-		{
-			_printByTitle(list);
-			resultCount++;
-		}
-		list = list->next;
-	}
-
-	if (resultCount == 0)
-	{
-		printf("No data about movies exists for that year.\n");
-	}
-}
-
-// when movie menu option 2 is chosen, the user does
-// not input any values. Instead, a list of unique years
-// is created and destroyed. Movies with the same year 
-// have their rating compared and swapped using the greater
-// of the two. 
-// input: a linked list of movies
-// output: stdout of each year that has a movie with the
-// highest rating.
-void _showByRating(struct movie *list, struct movie *uniqueList)
-{
-	//struct movie *uniqueYear = 0;
-	//struct movie *headRef = list;
-	//struct movie *tempNode = 0;
-
-	while (uniqueList != 0)
-	{
-		if (list != 0)
-		{
-			// check all the years that == the 
-			// year in the uniqueYear node
-			while (list->year == uniqueList->year)
-			{
-				if (list->rating > uniqueList->rating)
-				{
-					uniqueList->title = list->title;
-					uniqueList->year = list->year;
-					uniqueList->rating = list->rating;
-				}
-				if (list->next != 0)
-				{
-					list = list->next;
-				} else {break;}
-			}
-		}
-		printf("%u ", uniqueList->year);
-		printf("%0.1f ",uniqueList->rating);
-		printf(uniqueList->title);
-		printf("\n");
-		uniqueList = uniqueList->next;
-	}
-}
-
-// when movie menu option 3 is chosen, asks the user to enter
-// a language that they would like to search the movie list for.
-// uses _findStr helper function to search the languages field of the 
-// movie, exact matches only. When a movie is with that language is
-// found, prints that movie to stdout.
-// input: a linked list of movies
-// output: stdout of movies that are in the language entered by the user.
-void _showByLanguage(struct movie *list)
-{
-	char lang[20];
-	size_t matchCount = 0;
-	struct node *langRef = list->languages;
-	
-	printf("\nEnter the language for which you want to see movies: ");
-	scanf("%s", lang);
-
-	while (list != 0)
-	{
-		while (langRef != 0)
-		{
-			if (_findStr(langRef->val, lang))
-			{
-				matchCount++;	
-				printf("%d %s\n", list->year, list->title);
-			}
-			langRef = langRef->next;
-		}
-
-		list = list->next;
-
-		if (list != 0)
-		{
-			langRef = list->languages;
-		}
-	}
-
-	if (matchCount == 0)
-	{
-		printf("\nNo movies exist with that langauge.\n");
-	}
-}
-
+// move this procedure into the createUniqueYearList function.
+/*
 void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct movie *uniqueList)
 {
 	FILE *newFile = 0;
@@ -482,11 +342,11 @@ void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct mov
 	// move into the dir <dirname>
 	int newDir = chdir(dirname);
 
-	/* //for debugging only
-	char *buf = 0;
-	char *cwd = getcwd(buf, malloc(sizeof(strlen(dirname + 1) * sizeof(char))));
-	printf("cwd: %s\n", cwd);
-	*/
+	// //for debugging only
+	//char *buf = 0;
+	//char *cwd = getcwd(buf, malloc(sizeof(strlen(dirname + 1) * sizeof(char))));
+	//printf("cwd: %s\n", cwd);
+	//
 
 	// parse data to find out the movies released in each year. 
 	// create a file named <year>.txt for each year in 
@@ -520,8 +380,9 @@ void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct mov
 		uniqueList = uniqueList->next;
 	}
 }
+*/
 
-void _readFile(struct movie *list, struct movie *uniqueList)
+void _readFile(struct movie *list)
 {
 
 	srand(time(0));
@@ -563,7 +424,7 @@ void _readFile(struct movie *list, struct movie *uniqueList)
 	// which >= 1 movie was released
 	// and set each file permission to 0640
 	
-	_createFilesByUniqueYear(str, list, uniqueList);
+	_createUniqueYearFiles(str, list);
 
 	// in each file, write the titles of every movie with 
 	// the same year on a single line.
@@ -579,12 +440,7 @@ void _autoProcessFile(char *str)
 	FILE* movieFile;
 	struct movie *list = 0;
 	struct movie *sortedList = 0;
-	struct movie *uniqueYears = 0;
-	struct movie *ref1 = 0;
-	struct movie *ref4 = 0;
-	// for the languages in each movie
-	struct node *ref2 = 0;
-	struct node *ref3	= 0;
+	struct movie *ref = 0;
 
 	char filename[] = "";
 
@@ -606,45 +462,20 @@ void _autoProcessFile(char *str)
 
 	list = _processFile(movieFile);
 	sortedList = _mergeSort(list);
-	uniqueYears = _createUniqueYearList(sortedList);
-	ref1 = sortedList;
-	ref4 = uniqueYears;
+
+	ref = sortedList;
+	// this will turn into createUniqueYearFiles(sortedList);
+	//uniqueYears = _createUniqueYearFiles(str, sortedList);
+	//ref1 = sortedList;
+	//ref4 = uniqueYears;
 
 	fclose(movieFile);
 
-	_readFile(sortedList, uniqueYears);
+	_readFile(sortedList);
 
-	sortedList = ref1;
-
-	/*
-	while (sortedList != 0)
-	{
-		ref1 = sortedList;
-		free(ref1->title);
-		ref2 = sortedList->languages;
-		while (ref2 != 0)
-		{
-			ref3 = ref2;
-			//free(ref3->val);// this is were it seg faults
-			printf("ref3->val: %s ", ref3->val);
-			//free(ref3);
-			ref2 = ref2->next;
-		}
-		printf("\n");
-		free(ref1);
-		sortedList = sortedList->next;
-	}
-	free(sortedList);
-
-	uniqueYears = ref4;
-
-	while (uniqueYears != 0)
-	{
-		ref1 = uniqueYears;
-		uniqueYears = ref1->next;
-		free(ref1);
-	}
-	*/
+	sortedList = ref;
+	// destroy the movies
+	_destroyMovies(sortedList);
 }
 
 void _findLargestFile()
@@ -793,11 +624,7 @@ void _specifyFile()
 	struct movie *list = 0;
 	struct movie *sortedList = 0;
 	struct movie *uniqueYears = 0;
-	struct movie *ref1 = 0;
-	struct movie *ref4 = 0;
-	// for the languages in each movie
-	struct node *ref2 = 0;
-	struct node *ref3	= 0;
+	struct movie *ref = 0;
 
 	char filename[] = "";
 
@@ -819,45 +646,15 @@ void _specifyFile()
 
 	list = _processFile(movieFile);
 	sortedList = _mergeSort(list);
-	uniqueYears = _createUniqueYearList(sortedList);
-	ref1 = sortedList;
-	ref4 = uniqueYears;
+	//uniqueYears = _createUniqueYearList(sortedList);
 
 	fclose(movieFile);
 
-	_readFile(sortedList, uniqueYears);
+	_readFile(sortedList);
 
-	sortedList = ref1;
+	sortedList = ref;
 
-	/*
-	while (sortedList != 0)
-	{
-		ref1 = sortedList;
-		free(ref1->title);
-		ref2 = sortedList->languages;
-		while (ref2 != 0)
-		{
-			ref3 = ref2;
-			//free(ref3->val);// this is were it seg faults
-			printf("ref3->val: %s ", ref3->val);
-			//free(ref3);
-			ref2 = ref2->next;
-		}
-		printf("\n");
-		free(ref1);
-		sortedList = sortedList->next;
-	}
-	free(sortedList);
-
-	uniqueYears = ref4;
-
-	while (uniqueYears != 0)
-	{
-		ref1 = uniqueYears;
-		uniqueYears = ref1->next;
-		free(ref1);
-	}
-	*/
+	_destroyMovies(sortedList);
 }
 
 void _selectFile()
@@ -881,7 +678,6 @@ void _selectFile()
 
 	while (str[1] != '\0' || (choice < 1 || choice > 3))
 	{
-		
 		strcpy(str, "");
 		choice = 0;
 
