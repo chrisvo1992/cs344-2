@@ -95,6 +95,8 @@ struct movie* _createMovie(char* line)
 	newLang = malloc(sizeof(struct node));
 	newLang->val = calloc(strlen(token) + 1, sizeof(char));
 	strcpy(newLang->val, token);
+	newLang->val[strlen(newLang->val) + 1] = '\0';
+	newLang->next = 0;
 
 	// save the starting point of the list
 	langList = newLang;
@@ -111,6 +113,7 @@ struct movie* _createMovie(char* line)
 		newLang->val = calloc(strlen(token) + 1, sizeof(char));
 		newLang->next = 0;
 		strcpy(newLang->val, token);
+		newLang->val[strlen(newLang->val) + 1] = '\0';
 		i++;
 	}
 
@@ -129,34 +132,32 @@ void _destroyMovies(struct movie *list)
 	struct movie *ref2 = 0;
 	struct node *ref3 = 0;
 	struct node *ref4 = 0;
-	/*
+	///*
 	while (list != 0)
 	{
+		//printf("title: %s ", list->title);
+		//printf(", year: %u ", list->year);
 		ref1 = list;
 		free(ref1->title);
 		ref3 = list->languages;
+		///*
+		// this entire section worked in a1. now, it doesn't
 		while (ref3 != 0)
 		{
-			ref4 = ref3;
-			//free(ref3->val);// this is were it seg faults
 			//printf("ref3->val: %s ", ref3->val);
-			free(ref3);
-			ref3 = ref4->next;
+			ref4 = ref3;
+			free(ref4->val); // the mem leak issue 
+			//free(ref4); // 
+			ref3 = ref3->next;
 		}
+		free(ref3);
+		//*/
+		//printf(", rating: %f \n", list->rating);
 		free(ref1);
 		list = list->next;
 	}
 	free(list);
 	//*/
-
-	/*
-	while (list != 0)
-	{
-		ref1 = list;
-		list = ref1->next;
-		free(ref1);
-	}
-	*/
 }
 
 // creates a linked list of movies, using
@@ -211,7 +212,7 @@ struct movie *_processFile(FILE* movieFile)
 		}
 	}
 	free(currLine);
-	//fclose(movieFile);
+
 	return head;
 }
 
@@ -646,6 +647,8 @@ void _specifyFile()
 
 	list = _processFile(movieFile);
 	sortedList = _mergeSort(list);
+	ref = sortedList;
+
 	//uniqueYears = _createUniqueYearList(sortedList);
 
 	fclose(movieFile);

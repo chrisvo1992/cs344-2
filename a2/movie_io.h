@@ -8,7 +8,6 @@ struct node
 	struct node *next;
 };
 
-// da move eeeee
 struct movie 
 {
 	char* title;
