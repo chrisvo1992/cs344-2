@@ -130,9 +130,9 @@ struct movie* _createMovie(char* line)
 void _destroyMovies(struct movie *list)
 {
 	struct movie *ref1 = 0;
-	struct movie *ref2 = 0;
-	struct node *ref3 = 0;
-	struct node *ref4 = 0;
+	//struct movie *ref2 = 0;
+	//struct node *ref3 = 0;
+	//struct node *ref4 = 0;
 	///*
 	while (list != 0)
 	{
@@ -140,7 +140,7 @@ void _destroyMovies(struct movie *list)
 		//printf(", year: %u ", list->year);
 		ref1 = list;
 		free(ref1->title);
-		ref3 = list->languages;
+		//ref3 = list->languages;
 		/* // all my woes go here
 		// this entire section worked in a1. now, it doesn't
 		while (ref3 != 0)
@@ -215,6 +215,11 @@ void _createUniqueYearFiles(const char *dirname, struct movie* list)
 	char cstr[9]; 
 	// move into the <dirname> dir
 	int newDir = chdir(dirname);
+	if (newDir < 0)
+	{
+		perror("Error\n");
+		exit(EXIT_FAILURE);
+	}
 	unsigned int currYear = list->year;
 	struct movie *ref = list;
 
@@ -266,12 +271,9 @@ void printMovieMenu()
 
 void _createDir(struct movie *list)
 {
-
 	srand(time(0));
 	int newDir;
 	char str[] = ONID;
-	struct dirent *aDir;
-	struct stat dirStat;
 	unsigned int max = 99999;
 	int randNum = rand() % (max + 1); 
 	char *numStr = malloc(sizeof(char) * 6);

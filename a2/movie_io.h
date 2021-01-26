@@ -38,12 +38,6 @@ struct movie* _processFile(FILE*);
 // allocation of memory when option 2 is chosen.
 void _createUniqueYearFiles(const char*, struct movie*);
 
-// prints the entire linked list of movies,
-// using _printMovie as a helper function.
-// input: a linked list of movies
-// output: stdout
-void _printMovieList(struct movie*);
-
 // prints the menu instructions for the user
 // to follow.
 // input: stdin
