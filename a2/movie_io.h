@@ -36,7 +36,7 @@ struct movie* _processFile(FILE*);
 // creates a list of unique years for use in the 
 // _sortByRating function. Reduces the repeated 
 // allocation of memory when option 2 is chosen.
-struct movie* _createUniqueYearFiles(const char*, struct movie*);
+void _createUniqueYearFiles(const char*, struct movie*);
 
 // prints the entire linked list of movies,
 // using _printMovie as a helper function.
@@ -55,7 +55,7 @@ void printMovieMenu();
 // created each year. creates a file for each year a movie was
 // released. Each file prints all the movies released in the 
 // same year on the same line. 
-void _readFile(struct movie*);
+void _createDir(struct movie*);
 
 // auto processes the file
 // input: the file to process

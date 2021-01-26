@@ -95,7 +95,7 @@ struct movie* _createMovie(char* line)
 	newLang = malloc(sizeof(struct node));
 	newLang->val = calloc(strlen(token) + 1, sizeof(char));
 	strcpy(newLang->val, token);
-	newLang->val[strlen(newLang->val) + 1] = '\0';
+	newLang->val[strlen(newLang->val)] = '\0';
 	newLang->next = 0;
 
 	// save the starting point of the list
@@ -113,9 +113,10 @@ struct movie* _createMovie(char* line)
 		newLang->val = calloc(strlen(token) + 1, sizeof(char));
 		newLang->next = 0;
 		strcpy(newLang->val, token);
-		newLang->val[strlen(newLang->val) + 1] = '\0';
+		newLang->val[strlen(newLang->val)] = '\0';
 		i++;
 	}
+	newLang->next = 0;
 
 	// point the list of languages to the movie language list
 	currMovie->languages = langList;
@@ -140,18 +141,18 @@ void _destroyMovies(struct movie *list)
 		ref1 = list;
 		free(ref1->title);
 		ref3 = list->languages;
-		///*
+		/* // all my woes go here
 		// this entire section worked in a1. now, it doesn't
 		while (ref3 != 0)
 		{
 			//printf("ref3->val: %s ", ref3->val);
 			ref4 = ref3;
 			free(ref4->val); // the mem leak issue 
-			//free(ref4); // 
+			free(ref4); // free the struct node (the lang node)
 			ref3 = ref3->next;
 		}
 		free(ref3);
-		//*/
+		*/
 		//printf(", rating: %f \n", list->rating);
 		free(ref1);
 		list = list->next;
@@ -167,17 +168,6 @@ void _destroyMovies(struct movie *list)
 //struct movie *_processFile(char* filePath)
 struct movie *_processFile(FILE* movieFile)
 {
-	/*
-	FILE* movieFile = fopen(filePath, "r");
-	
-	if (!movieFile)
-	{
-		printf("oh no\n");
-		perror("Failed to open file\n");
-		exit(EXIT_FAILURE);
-	}
-	*/
-
 	size_t len = 0;
 	ssize_t read;
 	char* currLine = NULL;
@@ -219,30 +209,14 @@ struct movie *_processFile(FILE* movieFile)
 // creates a list of unique years for use in the 
 // _sortByRating function. Reduces the repeated 
 // allocation of memory when option 2 is chosen.
-struct movie* _createUniqueYearFiles(const char *dirname, struct movie* list)
+void _createUniqueYearFiles(const char *dirname, struct movie* list)
 {
 	FILE *newFile = 0;
 	char cstr[9]; 
-	// move into the dir <dirname>
+	// move into the <dirname> dir
 	int newDir = chdir(dirname);
 	unsigned int currYear = list->year;
 	struct movie *ref = list;
-
-	//struct movie *uniqueYears = 0;
-	//struct movie *tempNode = 0;
-	//struct movie *newNode = 0;
-
-	// The list is presorted in asc order, therefore the first
-	// value read is assigned to the first node in the uniqueYear
-	// linked list.
-	
-	//newNode = malloc(sizeof(struct movie));
-	/*newNode->year = list->year;
-	newNode->title = list->title;
-	newNode->rating = list->rating;
-	newNode->next = 0;
-	uniqueYears = newNode;
-	*/
 
 	while (list != 0)
 	{
@@ -275,51 +249,7 @@ struct movie* _createUniqueYearFiles(const char *dirname, struct movie* list)
 		list = list->next;
 	}
 
-	/*
-	FILE *newFile = 0;
-	char cstr[9]; 
-	// move into the dir <dirname>
-	int newDir = chdir(dirname);
-
-	//for debugging only
-	//char *buf = 0;
-	//char *cwd = getcwd(buf, malloc(sizeof(strlen(dirname + 1) * sizeof(char))));
-	//printf("cwd: %s\n", cwd);
-
-	// parse data to find out the movies released in each year. 
-	// create a file named <year>.txt for each year in 
-	// which >= 1 movie was released
-	// and set each file permission to 0640
-	
-	while (uniqueList != 0)
-	{
-		// create a new file <year>.txt
-		sprintf(cstr, "%d", uniqueList->year);
-		strcat(cstr, ".txt");
-   	newFile = fopen(cstr, "a+");
-
-		if (list != 0)
-		{
-			while (list->year == uniqueList->year)
-			{
-				fputs(list->title, newFile);
-				fputs("\n", newFile);
-				if (chmod(cstr, 0640) < 0)
-				{
-					perror("error changing file permissions\n");
-					break;
-				}
-				if (list->next != 0)
-				{
-					list = list->next;
-				} else {break;}
-			}
-		}
-		uniqueList = uniqueList->next;
-	}
-	*/
 	list = ref;
-	return list;
 }
 
 
@@ -334,56 +264,7 @@ void printMovieMenu()
 }
 
 
-// move this procedure into the createUniqueYearList function.
-/*
-void _createFilesByUniqueYear(const char *dirname,struct movie *list, struct movie *uniqueList)
-{
-	FILE *newFile = 0;
-	char cstr[9]; 
-	// move into the dir <dirname>
-	int newDir = chdir(dirname);
-
-	// //for debugging only
-	//char *buf = 0;
-	//char *cwd = getcwd(buf, malloc(sizeof(strlen(dirname + 1) * sizeof(char))));
-	//printf("cwd: %s\n", cwd);
-	//
-
-	// parse data to find out the movies released in each year. 
-	// create a file named <year>.txt for each year in 
-	// which >= 1 movie was released
-	// and set each file permission to 0640
-	
-	while (uniqueList != 0)
-	{
-		// create a new file <year>.txt
-		sprintf(cstr, "%d", uniqueList->year);
-		strcat(cstr, ".txt");
-   	newFile = fopen(cstr, "a+");
-
-		if (list != 0)
-		{
-			while (list->year == uniqueList->year)
-			{
-				fputs(list->title, newFile);
-				fputs("\n", newFile);
-				if (chmod(cstr, 0640) < 0)
-				{
-					perror("error changing file permissions\n");
-					break;
-				}
-				if (list->next != 0)
-				{
-					list = list->next;
-				} else {break;}
-			}
-		}
-		uniqueList = uniqueList->next;
-	}
-}
-*/
-
-void _readFile(struct movie *list)
+void _createDir(struct movie *list)
 {
 
 	srand(time(0));
@@ -424,7 +305,6 @@ void _readFile(struct movie *list)
 	// create a file named <year>.txt for each year in 
 	// which >= 1 movie was released
 	// and set each file permission to 0640
-	
 	_createUniqueYearFiles(str, list);
 
 	// in each file, write the titles of every movie with 
@@ -465,18 +345,15 @@ void _autoProcessFile(char *str)
 	sortedList = _mergeSort(list);
 
 	ref = sortedList;
-	// this will turn into createUniqueYearFiles(sortedList);
-	//uniqueYears = _createUniqueYearFiles(str, sortedList);
-	//ref1 = sortedList;
-	//ref4 = uniqueYears;
 
 	fclose(movieFile);
 
-	_readFile(sortedList);
+	_createDir(sortedList);
 
 	sortedList = ref;
 	// destroy the movies
 	_destroyMovies(sortedList);
+	//_destroyMovies(list);
 }
 
 void _findLargestFile()
@@ -529,7 +406,6 @@ void _findLargestFile()
 					strBuf = malloc(sizeof(char) * strlen(aDir->d_name) + 1);
 					strcpy(strBuf, aDir->d_name);
 				}
-				//printf("filename: %s, bytes: %lu\n", aDir->d_name, sb.st_size);
 			}
 		}
 		
@@ -599,7 +475,6 @@ void _findSmallestFile()
 					strBuf = malloc(sizeof(char) * strlen(aDir->d_name) + 1);
 					strcpy(strBuf, aDir->d_name);
 				}
-				//printf("filename: %s, bytes: %lu\n", aDir->d_name, sb.st_size);
 			}
 		}
 		
@@ -624,7 +499,6 @@ void _specifyFile()
 	FILE* movieFile;
 	struct movie *list = 0;
 	struct movie *sortedList = 0;
-	struct movie *uniqueYears = 0;
 	struct movie *ref = 0;
 
 	char filename[] = "";
@@ -649,15 +523,14 @@ void _specifyFile()
 	sortedList = _mergeSort(list);
 	ref = sortedList;
 
-	//uniqueYears = _createUniqueYearList(sortedList);
-
 	fclose(movieFile);
 
-	_readFile(sortedList);
+	_createDir(sortedList);
 
 	sortedList = ref;
 
 	_destroyMovies(sortedList);
+	//_destroyMovies(list);
 }
 
 void _selectFile()
