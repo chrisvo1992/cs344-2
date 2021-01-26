@@ -11,7 +11,7 @@ To run the program:
 
 	Then:
 
-		-> ./movies <your_csv_file>	
+		-> ./movies	
 
 	If you change anything in the files,
 	make sure to run this command:
