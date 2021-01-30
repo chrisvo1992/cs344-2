@@ -9,15 +9,15 @@
 #define MAX_ARGS 512
 
 ///////////////////////////////////////////////////////////////////////////////
-// a linked list that represents each command entered on a single line
-// type defined to CMD
+// a linked list that represents each command entered on a single line.
+// created a doubly linked list to be able to both allocate mem on the 
+// fly and check the prev and next commands of a current command input. 
 struct node 
 {
 	char* val;
 	struct node* prev;
 	struct node* next;
 };
-//typedef node CMD;
 
 ///////////////////////////////////////////////////////////////////////////////
 // create a command for a doubly linked list of commands.
@@ -39,7 +39,9 @@ struct node* CreateCommandNode(char* str)
 
 ///////////////////////////////////////////////////////////////////////////////
 // create a command for a doubly linked list of commands
-void CreateCommandList(char* str, int* cmdCount) 
+// input: a char str of commands 
+// output: a linked list of commands.
+struct node* CreateCommandList(char* str) 
 {
 	struct node* newCmd;
 	struct node* head = NULL;
@@ -47,24 +49,26 @@ void CreateCommandList(char* str, int* cmdCount)
 	struct node* curr;
 	char* savePtr;
 	
-	//printf("Number of commands entered: %d\n", *cmdCount);
-
 	char* token = strtok_r(str, " ", &savePtr);
 
 	newCmd = CreateCommandNode(token); 
 	
 	tail = newCmd;
 	head = tail;
+	head->prev = NULL;
 
 	while(token) 
 	{
-		token = strtok_r(NULL, " ", &savePtr);
 		newCmd = CreateCommandNode(token); 
 		//printf("%s\n", newCmd->val);
+		token = strtok_r(NULL, " ", &savePtr);
+		///*	
 		curr = tail;
 		tail = newCmd;
 		curr->next = tail;
 		tail->next = NULL;	
+		tail->prev = curr;
+		//*/
 	}
 
 	/*
@@ -74,19 +78,47 @@ void CreateCommandList(char* str, int* cmdCount)
 		head = head->next;
 	}
 	*/
+	return head;
 }
-
+///////////////////////////////////////////////////////////////////////////////
+// takes a list of commands and destroys them.
+// input: linked list of commands
+// ouput: destruction
+void destroyCommandList(struct node* list)
+{
+	struct node* temp;
+	while(list != NULL)
+	{
+		free(list->val);
+		temp = list->next;
+		free(list);
+		list = temp;
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 void parse(char* str) 
 {
 	printf("%s\n", str);	
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void run_command(char** val) 
+void run_commands(struct node* cmds) 
 {
+	struct node* head = cmds;
+
+	while(head != NULL)
+	{
+		printf("%s\n", head->val);
+		head = head->next;
+		/*
+		if(head->prev != NULL)
+		{
+			printf("%s\n", head->prev->val);
+		}
+		*/
+	}
+	/*
 	pid_t pid;
 	int status;
 
@@ -110,23 +142,25 @@ void run_command(char** val)
 			exit(0);
 			break;
 	}
+	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 int main() 
 {
 	char input[MAX_LEN + 1] = "";	
-	int count = 0;
+	struct node* commands = NULL;
 
 	// Enter the smallsh command line
 	while(1) {
 		printf(": ");
 		// read the input, skipping white-space (space, tab, newline, etc.)
-		count = scanf("%s", input);
-		if(count < 1) {
+		if(scanf("%s", input) < 1) {
 			printf("Yea, no...\n");
 		}
-		CreateCommandList(input, &count);
+		commands = CreateCommandList(input);
+		run_commands(commands);
+		destroyCommandList(commands);
 	}
 
 	return 0;
