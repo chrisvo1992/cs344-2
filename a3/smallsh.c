@@ -31,9 +31,7 @@ struct node* CreateCommandNode(char* str)
 	strcpy(newCommand->val, str);
 	newCommand->prev = NULL;
 	newCommand->next = NULL;
-
 	//printf("%s\n", newCommand->val);
-
 	return newCommand;
 }
 
@@ -56,6 +54,7 @@ struct node* CreateCommandList(char* str)
 	tail = newCmd;
 	head = tail;
 	head->prev = NULL;
+	tail->next = NULL;
 
 	while(token) 
 	{
@@ -99,25 +98,29 @@ void destroyCommandList(struct node* list)
 ///////////////////////////////////////////////////////////////////////////////
 void parse(char* str) 
 {
-	printf("%s\n", str);	
+	/*
+	while(head != NULL)
+	{
+		printf("%s\n", head->val);
+		head = head->next;
+	}
+	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 void run_commands(struct node* cmds) 
 {
 	struct node* head = cmds;
-
 	while(head != NULL)
 	{
-		printf("%s\n", head->val);
-		head = head->next;
-		/*
-		if(head->prev != NULL)
+		for (int i = 0; i < strlen(head->val); ++i)
 		{
-			printf("%s\n", head->prev->val);
+			printf("%c ", head->val[i]);
 		}
-		*/
+		printf("\n");
+		head = head->next;
 	}
+
 	/*
 	pid_t pid;
 	int status;
@@ -159,8 +162,9 @@ int main()
 			printf("Yea, no...\n");
 		}
 		commands = CreateCommandList(input);
-		run_commands(commands);
+		//run_commands(commands);
 		destroyCommandList(commands);
+		fflush(stdout);
 	}
 
 	return 0;
