@@ -31,7 +31,6 @@ struct node* CreateCommandNode(char* str)
 	strcpy(newCommand->val, str);
 	newCommand->prev = NULL;
 	newCommand->next = NULL;
-	//printf("%s\n", newCommand->val);
 	return newCommand;
 }
 
@@ -87,37 +86,63 @@ void destroyCommandList(struct node* list)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void parse(char* str) 
+void checkCommand(char* str) 
 {
-	/*
-	while(head != NULL)
+	//printf("%s ", str);
+	///*
+	if(strcmp(str, "exit") == 0)
 	{
-		printf("%s\n", head->val);
-		head = head->next;
+			printf("you entered %s\n", str);
 	}
-	*/
+	else if(strcmp(str, "cd") == 0)
+	{
+			printf("you entered %s\n", str);
+	}
+	else if(strcmp(str, "status") == 0)
+	{
+			printf("you entered %s\n", str);
+	}
+	else //(strcmp(str, "exit") != 0 )
+	{
+		printf("use exec family of functions\n");
+		///*
+		for (int i = 0; i < strlen(str); ++i)
+		{
+			if (str[i] == '\n' || str[i] == '\0')
+			{
+				printf("%c", str[i]);
+			}
+		}
+		//*/
+	}
+	//*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// for each command in the list, check them and run processes
+// input: a list of commands
+// ouput: the result of those commands
 void run_commands(struct node* cmds) 
 {
 	struct node* head = cmds;
+	pid_t pid;
+	int status;
 
 	while(head != NULL)
 	{
+		checkCommand(head->val);	
+		/*
 		for (int i = 0; i < strlen(head->val); ++i)
 		{
 			printf("%c", head->val[i]);
 		}
 		printf(" ");
+		*/
 		head = head->next;
 	}
 
 	/*
-	pid_t pid;
-	int status;
-
-	pid = fork();
+		pid = fork();
 
 	printf("%s\n", *val);
 
@@ -141,6 +166,7 @@ void run_commands(struct node* cmds)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+//
 int main() 
 {
 	//char input[MAX_LEN + 1] = "";	
