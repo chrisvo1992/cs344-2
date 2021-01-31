@@ -39,7 +39,7 @@ struct node* CreateCommandNode(char* str)
 // create a command for a doubly linked list of commands
 // input: a char str of commands 
 // output: a linked list of commands.
-struct node* CreateCommandList(char* str) 
+struct node* CreateCommandList(char** str) 
 {
 	struct node* newCmd;
 	struct node* head = NULL;
@@ -47,36 +47,27 @@ struct node* CreateCommandList(char* str)
 	struct node* curr;
 	char* savePtr;
 	
-	char* token = strtok_r(str, " ", &savePtr);
-
-	newCmd = CreateCommandNode(token); 
-	
-	tail = newCmd;
-	head = tail;
-	head->prev = NULL;
-	tail->next = NULL;
+	char* token = strtok_r(*str, " ", &savePtr);
 
 	while(token) 
 	{
 		newCmd = CreateCommandNode(token); 
-		//printf("%s\n", newCmd->val);
-		token = strtok_r(NULL, " ", &savePtr);
-		///*	
+		if (tail == NULL)
+		{
+			newCmd = CreateCommandNode(token); 
+			tail = newCmd;
+			head = tail;
+			head->prev = NULL;
+			tail->next = NULL;
+		}
 		curr = tail;
 		tail = newCmd;
 		curr->next = tail;
 		tail->next = NULL;	
 		tail->prev = curr;
-		//*/
+		token = strtok_r(NULL, " ", &savePtr);
 	}
 
-	/*
-	while(head != NULL)
-	{
-		printf("%s\n", head->val);
-		head = head->next;
-	}
-	*/
 	return head;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,13 +102,14 @@ void parse(char* str)
 void run_commands(struct node* cmds) 
 {
 	struct node* head = cmds;
+
 	while(head != NULL)
 	{
 		for (int i = 0; i < strlen(head->val); ++i)
 		{
-			printf("%c ", head->val[i]);
+			printf("%c", head->val[i]);
 		}
-		printf("\n");
+		printf(" ");
 		head = head->next;
 	}
 
@@ -151,20 +143,25 @@ void run_commands(struct node* cmds)
 ///////////////////////////////////////////////////////////////////////////////
 int main() 
 {
-	char input[MAX_LEN + 1] = "";	
+	//char input[MAX_LEN + 1] = "";	
+	char **input = malloc(sizeof(char) * MAX_LEN + 1);
 	struct node* commands = NULL;
+	ssize_t nread = 0;
+	size_t len;
 
 	// Enter the smallsh command line
 	while(1) {
-		printf(": ");
-		// read the input, skipping white-space (space, tab, newline, etc.)
-		if(scanf("%s", input) < 1) {
+			printf(": ");
+		// read the input
+		if(getline(input, &len, stdin) == -1) {
 			printf("Yea, no...\n");
+			perror("getline");
 		}
 		commands = CreateCommandList(input);
-		//run_commands(commands);
+		run_commands(commands);
 		destroyCommandList(commands);
-		fflush(stdout);
+		fflush(stdin);
+		strcpy(*input, "");
 	}
 
 	return 0;
