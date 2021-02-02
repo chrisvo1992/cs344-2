@@ -16,8 +16,14 @@ while the user remains in the shell:
 				get the status
 
 			cd:
-				get the argument corresponding to the 
-				value given by the user.	
+				takes at most one argument, which is the path
+				of a dir to change to. 
+				
+				if the directory does not exist, print an err
+				msg for the user.
+
+				if no args are given, change to the directory
+				specified in the HOME environmental variable
 		}
 		else 
 		{

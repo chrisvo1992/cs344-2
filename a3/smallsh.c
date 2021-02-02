@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -104,43 +105,58 @@ void destroyCommandList(struct node* list)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// check the commands
-// input: char str representing a single command line input
+// check the commands. this is given a node taht can reference
+// previous and next commands for things such as cd
+// input: a node representing a command node
 // ouput: the result of the command
-void checkCommand(char* str) 
+//void checkCommand(char* str) 
+void checkCommand(struct node *cmd)
 {
+	char *temp = NULL;
+	char *home = getenv("HOME");
+
 	//printf("%s ", str);
 	///*
-	if(strcmp(str, "exit") == 0)
+	if(strcmp(cmd->val, "exit") == 0)
 	{
-			printf("you entered %s\n", str);
-			// if pid == 0, sig is sent to every process in the process
-			// group.
-			// https://man7.org/linux/man-pages/man2/kill.2.html
-			// https://man7.org/linux/man-pages/man7/signal.7.html
-			kill(0, SIGKILL);
-			exit(0);
+		printf("you entered %s\n", cmd->val);
+		// if pid == 0, sig is sent to every process in the process
+		// group.
+		// https://man7.org/linux/man-pages/man2/kill.2.html
+		// https://man7.org/linux/man-pages/man7/signal.7.html
+		kill(0, SIGKILL);
+		exit(0);
 	}
-	else if(strcmp(str, "cd") == 0)
+	else if(strcmp(cmd->val, "cd") == 0)
+	//https://man7.org/linux/man-pages/man3/getenv.3.html
 	{
-			printf("you entered %s\n", str);
-	}
-	else if(strcmp(str, "status") == 0)
-	{
-			printf("you entered %s\n", str);
-	}
-	else //(strcmp(str, "exit") != 0 )
-	{
-		printf("use exec family of functions\n");
-		///*
-		for (int i = 0; i < strlen(str); ++i)
+		if (cmd->next == NULL )
 		{
-			if (str[i] == '\n' || str[i] == '\0')
+			if (chdir(home) < 0)
 			{
-				printf("%c", str[i]);
+				perror("HOME");
 			}
 		}
+		else
+		{
+			if (chdir(cmd->next->val) < 0)
+			{
+				perror("Yeah, no.");
+			}
+		}
+		///*// can comment out at the end
+		temp = get_current_dir_name();
 		//*/
+
+		printf("%s\n", temp);
+	}
+	else if(strcmp(cmd->val, "status") == 0)
+	{
+		printf("you entered %s\n", cmd->val);
+	}
+	else
+	{
+		printf("use exec family of functions\n");
 	}
 	//*/
 }
@@ -157,7 +173,7 @@ void run_commands(struct node* cmds)
 
 	while(head != NULL)
 	{
-		checkCommand(head->val);	
+		checkCommand(head);	
 		/*
 		for (int i = 0; i < strlen(head->val); ++i)
 		{
