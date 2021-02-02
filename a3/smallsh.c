@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #define MAX_LEN 2048
 #define MAX_ARGS 512
@@ -45,8 +46,23 @@ struct node* CreateCommandList(char** str)
 	struct node* tail = NULL;
 	struct node* curr;
 	char* savePtr;
+	// this is just to null terminate the last char in the string
+	// going on 3 hours of sleep but this is the easiest way that I see,
+	// right now, to remove the newline character fromt *str. Might be
+	// overkill and/or there might be a better way but this works for me
+	// at this moment.
+	unsigned int strLen = (unsigned int)strlen(*str);
+	char *line = malloc(sizeof(strLen * sizeof(char)));
+	strcpy(line, *str);
+	line[strLen - 1] = '\0';
 	
-	char* token = strtok_r(*str, " ", &savePtr);
+	/*// could use gdb for this but im here anyways	
+	for (int i = 0; i < strLen; ++i) {
+		printf("%c ", line[i]);
+	}
+	*/
+
+	char* token = strtok_r(line, " ", &savePtr);
 
 	while(token) 
 	{
@@ -67,6 +83,8 @@ struct node* CreateCommandList(char** str)
 		token = strtok_r(NULL, " ", &savePtr);
 	}
 
+	free(line);
+
 	return head;
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -86,6 +104,9 @@ void destroyCommandList(struct node* list)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// check the commands
+// input: char str representing a single command line input
+// ouput: the result of the command
 void checkCommand(char* str) 
 {
 	//printf("%s ", str);
@@ -93,6 +114,12 @@ void checkCommand(char* str)
 	if(strcmp(str, "exit") == 0)
 	{
 			printf("you entered %s\n", str);
+			// if pid == 0, sig is sent to every process in the process
+			// group.
+			// https://man7.org/linux/man-pages/man2/kill.2.html
+			// https://man7.org/linux/man-pages/man7/signal.7.html
+			kill(0, SIGKILL);
+			exit(0);
 	}
 	else if(strcmp(str, "cd") == 0)
 	{
@@ -172,7 +199,6 @@ int main()
 	//char input[MAX_LEN + 1] = "";	
 	char **input = malloc(sizeof(char) * MAX_LEN + 1);
 	struct node* commands = NULL;
-	ssize_t nread = 0;
 	size_t len;
 
 	// Enter the smallsh command line

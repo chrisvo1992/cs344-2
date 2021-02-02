@@ -1,0 +1,41 @@
+
+while the user remains in the shell:
+
+	commandList = read input from stdin;
+
+	while (command in commandList != NULL)
+	{
+		if (checkCommand(exit,status,cd) == command)
+		{
+			exit:	
+				kill all processes, then exit the shell.
+				no return status needed.
+				no background operation (no processing of &)
+
+			status:
+				get the status
+
+			cd:
+				get the argument corresponding to the 
+				value given by the user.	
+		}
+		else 
+		{
+			if (last char in the command is == '&')
+			{
+				run the process in the background
+				execvp the command entered
+			}
+			else
+			{
+				run the process in the foreground 
+			}
+
+			print the exit status when each process
+			is completed.	
+		}
+	}
+	
+	
+		
+		
