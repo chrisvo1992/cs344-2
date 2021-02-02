@@ -141,24 +141,41 @@ void checkCommand(struct node *cmd)
 		{
 			if (chdir(cmd->next->val) < 0)
 			{
-				perror("Yeah, no.");
+				perror(cmd->next->val);
 			}
 		}
 		///*// can comment out at the end
 		temp = get_current_dir_name();
-		//*/
-
 		printf("%s\n", temp);
+		free(temp);
+		//*/
 	}
 	else if(strcmp(cmd->val, "status") == 0)
 	{
-		printf("you entered %s\n", cmd->val);
+		char *argv[] = {"ps", NULL};
+		int childStatus;
+		pid_t spawnPid = fork();
+		switch(spawnPid)
+		{
+			case -1:
+				perror("execvp");
+				exit(1);	
+				break;
+			case 0:
+				printf("child(%d) running ps\n", getpid());
+				execvp(argv[0], argv);
+				perror("execvp");
+				exit(1);		
+			default:
+				spawnPid = waitpid(spawnPid, &childStatus, 0);
+				//printf("parent(%d): child(%d) terminated.\n", getpid(), spawnPid);
+				break;
+		}
 	}
 	else
 	{
 		printf("use exec family of functions\n");
 	}
-	//*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -174,13 +191,6 @@ void run_commands(struct node* cmds)
 	while(head != NULL)
 	{
 		checkCommand(head);	
-		/*
-		for (int i = 0; i < strlen(head->val); ++i)
-		{
-			printf("%c", head->val[i]);
-		}
-		printf(" ");
-		*/
 		head = head->next;
 	}
 

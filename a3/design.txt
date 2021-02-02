@@ -13,7 +13,9 @@ while the user remains in the shell:
 				no background operation (no processing of &)
 
 			status:
-				get the status
+				print out the status of either the exit status
+				or the terminating signal of the last 
+				foreground process ran by smallsh.
 
 			cd:
 				takes at most one argument, which is the path
