@@ -149,6 +149,7 @@ void processBashCommands(struct node* cmd)
 
 	// still need to check for redirection, using dup2().
 	// induced error to save ending location
+	// ps doesnt work without any options.
 	while(cmd != ULL)
 	{
 		strcat(cmdOpts, cmd->val);
