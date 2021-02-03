@@ -115,9 +115,6 @@ void destroyCommandList(struct node* list)
 // 	4: all others
 int checkCommand(struct node *cmd)
 {
-	char *temp = NULL;
-	char *home = getenv("HOME");
-
 	if(strcmp(cmd->val, "exit") == 0)
 	{
 		return 1;
@@ -132,32 +129,54 @@ int checkCommand(struct node *cmd)
 	{
 		return 3;
 	}
-		/*	
-		char *argv[] = {cmd->val, NULL};
-		int childStatus;
-		pid_t spawnPid = fork();
-		switch(spawnPid)
-		{
-			case -1:
-				perror("execvp");
-				exit(1);	
-				break;
-			case 0:
-				printf("child(%d) running %s\n", getpid(), argv[0]);
-				execvp(argv[0], argv);
-				perror("execvp");
-				exit(1);		
-			default:
-				spawnPid = waitpid(spawnPid, &childStatus, 0);
-				//printf("parent(%d): child(%d) terminated.\n", getpid(), spawnPid);
-				break;
-		}
-		*/
+
 	// all others
 	return 4;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
-//
+// constructs the argument list from the array of pointers to 
+// null-terminated strings
+// input: the head of the linked list of commands
+// output: stdout
+void processBashCommands(struct node* cmd)
+{
+	char cmdOpts[MAX_LEN] = "";
+	char* cmdStr = malloc(strlen(cmd->val) + 1 * (sizeof(char)));
+	strcpy(cmdStr, cmd->val);
+	cmd = cmd->next;
+	unsigned int i = 0;
+
+	// still need to check for redirection, using dup2().
+	// induced error to save ending location
+	while(cmd != ULL)
+	{
+		strcat(cmdOpts, cmd->val);
+		strcat(cmdOpts, "\0");
+		cmd = cmd->next;
+	}
+	strcat(cmdOpts, "\0");
+	char *argv[] = {cmdStr, cmdOpts, NULL};
+
+	int childStatus;
+	pid_t spawnPid = fork();
+	switch(spawnPid)
+	{
+		case -1:
+			perror("execvp");
+			exit(1);	
+			break;
+		case 0:
+			printf("child(%d) running %s\n", getpid(), argv[0]);
+			execvp(argv[0], argv);
+			perror("execvp");
+			exit(1);		
+		default:
+			spawnPid = waitpid(spawnPid, &childStatus, 0);
+			//printf("parent(%d): child(%d) terminated.\n", getpid(), spawnPid);
+			break;
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // check the kind of command to run. if it is 4, process differently
@@ -169,6 +188,8 @@ int checkCommand(struct node *cmd)
 // ouput: the result of those commands
 void peek_commands(struct node* cmds) 
 {
+	char *temp = NULL;
+	char *home = getenv("HOME");
 	struct node* head = cmds;
 	int cmdType = checkCommand(head);	
 	
@@ -208,7 +229,7 @@ void peek_commands(struct node* cmds)
 			printf("last foreground process, whatever tf that means.\n");	
 		break;
 		case 4:
-			
+			processBashCommands(head);		
 		break;
 		default:
 		break;
