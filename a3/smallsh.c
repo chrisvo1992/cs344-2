@@ -108,51 +108,32 @@ void destroyCommandList(struct node* list)
 // check the commands. this is given a node taht can reference
 // previous and next commands for things such as cd
 // input: a node representing a command node
-// ouput: the result of the command
-//void checkCommand(char* str) 
-void checkCommand(struct node *cmd)
+// ouput: 
+// 	1: exit 
+// 	2: cd
+// 	3: status
+// 	4: all others
+int checkCommand(struct node *cmd)
 {
 	char *temp = NULL;
 	char *home = getenv("HOME");
 
-	//printf("%s ", str);
-	///*
 	if(strcmp(cmd->val, "exit") == 0)
 	{
-		printf("you entered %s\n", cmd->val);
-		// if pid == 0, sig is sent to every process in the process
-		// group.
-		// https://man7.org/linux/man-pages/man2/kill.2.html
-		// https://man7.org/linux/man-pages/man7/signal.7.html
-		kill(0, SIGKILL);
-		exit(0);
+		return 1;
 	}
-	else if(strcmp(cmd->val, "cd") == 0)
-	//https://man7.org/linux/man-pages/man3/getenv.3.html
+
+	if(strcmp(cmd->val, "cd") == 0)
 	{
-		if (cmd->next == NULL )
-		{
-			if (chdir(home) < 0)
-			{
-				perror("HOME");
-			}
-		}
-		else
-		{
-			if (chdir(cmd->next->val) < 0)
-			{
-				perror(cmd->next->val);
-			}
-		}
-		///*// can comment out at the end
-		temp = get_current_dir_name();
-		printf("%s\n", temp);
-		free(temp);
-		//*/
+		return 2;
 	}
-	else if(strcmp(cmd->val, "status") == 0)
+
+	if(strcmp(cmd->val, "status") == 0)
 	{
-		char *argv[] = {"ps", NULL};
+		return 3;
+	}
+		/*	
+		char *argv[] = {cmd->val, NULL};
 		int childStatus;
 		pid_t spawnPid = fork();
 		switch(spawnPid)
@@ -162,7 +143,7 @@ void checkCommand(struct node *cmd)
 				exit(1);	
 				break;
 			case 0:
-				printf("child(%d) running ps\n", getpid());
+				printf("child(%d) running %s\n", getpid(), argv[0]);
 				execvp(argv[0], argv);
 				perror("execvp");
 				exit(1);		
@@ -171,51 +152,67 @@ void checkCommand(struct node *cmd)
 				//printf("parent(%d): child(%d) terminated.\n", getpid(), spawnPid);
 				break;
 		}
-	}
-	else
-	{
-		printf("use exec family of functions\n");
-	}
+		*/
+	// all others
+	return 4;
 }
+///////////////////////////////////////////////////////////////////////////////
+//
 
 ///////////////////////////////////////////////////////////////////////////////
-// for each command in the list, check them and run processes
-// input: a list of commands
+// check the kind of command to run. if it is 4, process differently
+// 	1: exit 
+// 	2: cd
+// 	3: status
+// 	4: all others
+// input: a list of commands 
 // ouput: the result of those commands
-void run_commands(struct node* cmds) 
+void peek_commands(struct node* cmds) 
 {
 	struct node* head = cmds;
-	pid_t pid;
-	int status;
-
-	while(head != NULL)
+	int cmdType = checkCommand(head);	
+	
+	switch(cmdType)
 	{
-		checkCommand(head);	
-		head = head->next;
-	}
-
-	/*
-		pid = fork();
-
-	printf("%s\n", *val);
-
-	switch(pid) {
-		case -1:
-			perror("fork() failed");
-			exit(1);
-			break;
-		case 0:
-			if (execvp(*val, val) < 0) {
-				perror("execvp");
-				exit(EXIT_FAILURE);
-			}
-			break;
-		default:
-			pid = waitpid(pid, &status, 0);
+		case 1:
+			// if pid == 0, sig is sent to every process in the process group
+			// https://man7.org/linux/man-pages/man2/kill.2.html
+			// https://man7.org/linux/man-pages/man7/signal.7.html
+			kill(0, SIGKILL);
 			exit(0);
-			break;
+		break;
+		case 2:
+		//https://man7.org/linux/man-pages/man3/getenv.3.html
+			if (head->next == NULL )
+			{
+				if (chdir(home) < 0)
+				{
+					perror("HOME");
+				}
+			}
+			else
+			{
+				if (chdir(head->next->val) < 0)
+				{
+					perror(head->next->val);
+				}
+			}
+			///*// can comment out at the end
+			temp = get_current_dir_name();
+			printf("%s\n", temp);
+			free(temp);
+			//*/		
+		break;
+		case 3:
+			printf("print the exit status or the last terminal signal of the");
+			printf("last foreground process, whatever tf that means.\n");	
+		break;
+		case 4:
+			
+		break;
+		default:
+		break;
 	}
-	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -226,7 +223,6 @@ int main()
 	char **input = malloc(sizeof(char) * MAX_LEN + 1);
 	struct node* commands = NULL;
 	size_t len;
-
 	// Enter the smallsh command line
 	while(1) {
 			printf(": ");
@@ -236,7 +232,7 @@ int main()
 			perror("getline");
 		}
 		commands = CreateCommandList(input);
-		run_commands(commands);
+		peek_commands(commands);
 		destroyCommandList(commands);
 		fflush(stdin);
 		strcpy(*input, "");

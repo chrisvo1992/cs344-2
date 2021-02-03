@@ -29,18 +29,22 @@ while the user remains in the shell:
 		}
 		else 
 		{
-			if (last char in the command is == '&')
+			construct the argument list from the array of 
+			pointers to null-terminated strings:
 			{
-				run the process in the background
-				execvp the command entered
-			}
-			else
-			{
-				run the process in the foreground 
-			}
+				if (last char in the command is == '&')
+				{
+					run the process in the background
+					execvp the command entered
+				}
+				else
+				{
+					run the process in the foreground 
+				}
 
-			print the exit status when each process
-			is completed.	
+				print the exit status when each process
+				is completed.	
+			}
 		}
 	}
 	
