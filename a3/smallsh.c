@@ -135,47 +135,103 @@ int checkCommand(struct node *cmd)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// run as foreground process
+// input: pointer to a list of null-teminated strings
+// output: pid status
+int runForeground(char** arg)
+{
+	int childStatus;
+	pid_t spawnPid = fork();
+	switch(spawnPid)
+	{
+		case -1:
+			perror("fork failed");
+			exit(1);	
+			break;
+		case 0:
+			printf("child(%d) running %s\n", getpid(), arg[0]);
+			execvp(arg[0], arg);
+			perror("execvp");
+			exit(1);		
+			break;
+		default:
+			spawnPid = waitpid(spawnPid, &childStatus, 0);
+			//printf("parent(%d): child(%d) terminated.\n", getpid(), spawnPid);
+			break;
+	}
+	return spawnPid;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// run as background process
+// input: pointer to a list of null-teminated strings
+// output: pid status
+int runBackground(char** arg)
+{
+	int childStatus;
+
+	pid_t spawnPid = fork();
+	spawnPid = waitpid(-1, &childStatus, WNOHANG);
+
+	if (spawnPid < 0) 
+	{
+		perror("fork failed");
+		exit(1);	
+	}
+	else if (spawnPid > 0)
+	{
+		printf("child(%d) running %s\n", getpid(), arg[0]);
+		execvp(arg[0], arg);
+		perror("execvp");
+		exit(1);		
+		printf("spawnPid %d\n", spawnPid);
+	}
+	return spawnPid;
+}
+///////////////////////////////////////////////////////////////////////////////
 // constructs the argument list from the array of pointers to 
 // null-terminated strings
 // input: the head of the linked list of commands
 // output: stdout
 void processBashCommands(struct node* cmd)
 {
+	char *argv[3];
 	char cmdOpts[MAX_LEN] = "";
-	char* cmdStr = malloc(strlen(cmd->val) + 1 * (sizeof(char)));
+	char* cmdStr = malloc((strlen(cmd->val) + 1) * (sizeof(char)));
 	strcpy(cmdStr, cmd->val);
 	cmd = cmd->next;
-	unsigned int i = 0;
+	argv[0] = cmdStr;
+	int flag = 0;
 
-	// still need to check for redirection, using dup2().
-	// induced error to save ending location
-	// ps doesnt work without any options.
-	while(cmd != ULL)
+	while(cmd != NULL)
 	{
+		flag = 1;
 		strcat(cmdOpts, cmd->val);
 		strcat(cmdOpts, "\0");
 		cmd = cmd->next;
 	}
-	strcat(cmdOpts, "\0");
-	char *argv[] = {cmdStr, cmdOpts, NULL};
 
-	int childStatus;
-	pid_t spawnPid = fork();
-	switch(spawnPid)
+	if (cmdOpts[strlen(cmdOpts) - 1] == '&')
 	{
-		case -1:
-			perror("execvp");
-			exit(1);	
-			break;
-		case 0:
-			printf("child(%d) running %s\n", getpid(), argv[0]);
-			execvp(argv[0], argv);
-			perror("execvp");
-			exit(1);		
-		default:
-			spawnPid = waitpid(spawnPid, &childStatus, 0);
-			//printf("parent(%d): child(%d) terminated.\n", getpid(), spawnPid);
-			break;
+		cmdOpts[strlen(cmdOpts) - 1] = '\0';
+		flag = 2;
+	}
+
+	//printf("%s %i\n", cmdOpts, strlen(cmdOpts));
+	
+		// check if there are options or nah.
+	if (flag){ argv[1] = cmdOpts; argv[2] = NULL; }
+	else { argv[1] = NULL; argv[2] = NULL; }
+	
+	// choose whether it is a foreground or background process
+	// printf("%c\n", cmdOpts[strlen(cmdOpts) - 1]);
+	if (flag == 2)
+	{
+		runBackground(argv);
+	}
+	else 
+	{
+		runForeground(argv);	
 	}
 }
 
