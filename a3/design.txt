@@ -2,6 +2,8 @@
 while the user remains in the shell:
 
 	commandList = read input from stdin;
+	
+	***if command list is blank, handle it***
 
 	while (command in commandList != NULL)
 	{
@@ -30,7 +32,11 @@ while the user remains in the shell:
 		else 
 		{
 			construct the argument list from the array of 
-			pointers to null-terminated strings:
+			pointers to null-terminated strings.
+
+			The parent process must monitor the status of 
+			these child processes.
+
 			{
 				if (last char in the command is == '&')
 				{

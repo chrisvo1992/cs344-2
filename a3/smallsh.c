@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -178,20 +179,70 @@ int runForeground(char** arg)
 // output: pid status
 int runBackground(char** arg, struct proc* bgProcs)
 {
+	/*
 	struct proc* newBgProc = NULL;
 	struct proc* bgHead = NULL;
 	struct proc* bgTail = NULL;
 	struct proc* ref = NULL;
+	*/
+	
 	int childStatus;
+	pid_t parent;
+	// redirect stdin and stdout to /dev/null with dup2
+	int garbage = open("garbage.dat", O_WRONLY | O_TRUNC);
+	int newFd; 
+	if (garbage < 0)
+	{
+		perror("dup2() failed");	
+	}
+	else 
+	{
+		newFd = dup2(garbage,1); 
+	}
 	
-	// rediredt stdin and stdout to /dev/null with dup2
-	
-	printf("parent pid: %i\n", getpid());
+	parent = getpid();
 
-	pid_t spawnPid = fork();
+	pid_t spawnPid, wPid;
+	spawnPid = fork();
+		
+	if (spawnPid < 0)
+	{
+		perror("fork failed");
+		_exit(1);
+	}
+	else if (spawnPid == 0)
+	{
+		execvp(arg[0], arg);
+		perror(arg[0]);
+		wPid = waitpid(spawnPid, &childStatus, WNOHANG);
+	}
+	else
+	{
+		_exit(0);
+	}
 
-	spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
+	do
+	{
+		if (wPid < 0)
+		{
+			perror("waitpid");
+			_exit(1);
+		}
+		if (WIFEXITED(childStatus))
+		{
+			printf("child exited, status=%d\n", WEXITSTATUS(childStatus));
+		}
+		else if (WIFSIGNALED(childStatus))
+		{
+			printf("child killed (signal %d)\n", WTERMSIG(childStatus));
+		}
+		else if (WIFSTOPPED(childStatus))
+		{
+			printf("child stopped (signal %d)\n", WSTOPSIG(childStatus));
+     }
+	} while (WIFEXITED(childStatus) && !WIFSIGNALED(childStatus));
 
+	/*
 	if (bgProcs == NULL)
 	{
 		bgHead = malloc(sizeof(struct proc));
@@ -207,6 +258,7 @@ int runBackground(char** arg, struct proc* bgProcs)
 	newBgProc->pid = spawnPid;
 	newBgProc->next = NULL; 	
 	bgTail = newBgProc;
+	*/
 
 	/*
 	if (spawnPid < 0)
@@ -227,12 +279,14 @@ int runBackground(char** arg, struct proc* bgProcs)
 		printf("issues\n");		
 	}
 	*/
+	/*
 	while (ref != NULL)
 	{
 		printf("bg proc: %i\n", ref->pid);
 		ref = ref->next;
 	}
-
+	*/
+	close(newFd);
 	return spawnPid;
 }
 
@@ -347,6 +401,8 @@ void peek_commands(struct node* cmds, struct proc* procs)
 //
 int main() 
 {
+	// set the controlling terminal
+	int fd = open("smallsh", O_RDONLY);
 	//char input[MAX_LEN + 1] = "";	
 	// *input[]
 	char **input = malloc(sizeof(char) * MAX_LEN + 1);
