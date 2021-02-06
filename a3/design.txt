@@ -34,8 +34,12 @@ while the user remains in the shell:
 			{
 				if (last char in the command is == '&')
 				{
-					run the process in the background
-					execvp the command entered
+					create a background process and add it to the 
+					linked list of background processes. 
+	
+					since control will be returned to the parent,
+					continue to check the status of the child processes
+					that were executed in the background
 				}
 				else
 				{

@@ -21,6 +21,13 @@ struct node
 	struct node* next;
 };
 
+struct proc 
+{
+	pid_t pid; 
+	struct proc* next;
+};
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // create a command for a doubly linked list of commands.
 // input: a token representing each command that has been 
@@ -151,50 +158,93 @@ int runForeground(char** arg)
 		case 0:
 			printf("child(%d) running %s\n", getpid(), arg[0]);
 			execvp(arg[0], arg);
-			perror("execvp");
-			exit(1);		
+			perror(arg[0]);
+			_exit(1);		
 			break;
 		default:
 			spawnPid = waitpid(spawnPid, &childStatus, 0);
-			//printf("parent(%d): child(%d) terminated.\n", getpid(), spawnPid);
 			break;
 	}
 	return spawnPid;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// run as background process
-// input: pointer to a list of null-teminated strings
+// run as background process. checks if there are any current background
+// processes running. If there are not, creates a list of bg procs. 
+// In either case, continues to check for the termination of any bg 
+// process in the list.
+// input: pointer to a list of null-teminated strings and a pointer to a
+// list of background processes
 // output: pid status
-int runBackground(char** arg)
+int runBackground(char** arg, struct proc* bgProcs)
 {
+	struct proc* newBgProc = NULL;
+	struct proc* bgHead = NULL;
+	struct proc* bgTail = NULL;
+	struct proc* ref = NULL;
 	int childStatus;
+	
+	// rediredt stdin and stdout to /dev/null with dup2
+	
+	printf("parent pid: %i\n", getpid());
 
 	pid_t spawnPid = fork();
-	spawnPid = waitpid(-1, &childStatus, WNOHANG);
 
-	if (spawnPid < 0) 
+	spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
+
+	if (bgProcs == NULL)
 	{
-		perror("fork failed");
-		exit(1);	
+		bgHead = malloc(sizeof(struct proc));
+		ref = bgHead;
+		bgHead->pid = spawnPid;
+		bgTail = bgHead;
+		bgHead->next = bgTail;
+		bgProcs = bgHead;
+		ref = bgProcs;
+	}	
+	newBgProc = malloc(sizeof(struct proc));
+	bgTail->next = newBgProc;
+	newBgProc->pid = spawnPid;
+	newBgProc->next = NULL; 	
+	bgTail = newBgProc;
+
+	/*
+	if (spawnPid < 0)
+	{
+		perror("issue with the fork()");
 	}
-	else if (spawnPid > 0)
+	else if (spawnPid)
 	{
-		printf("child(%d) running %s\n", getpid(), arg[0]);
+		printf("child executing\n");
+		spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
 		execvp(arg[0], arg);
 		perror("execvp");
-		exit(1);		
-		printf("spawnPid %d\n", spawnPid);
 	}
+	*/
+	/*
+	else
+	{
+		printf("issues\n");		
+	}
+	*/
+	while (ref != NULL)
+	{
+		printf("bg proc: %i\n", ref->pid);
+		ref = ref->next;
+	}
+
 	return spawnPid;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 // constructs the argument list from the array of pointers to 
 // null-terminated strings
 // input: the head of the linked list of commands
 // output: stdout
-void processBashCommands(struct node* cmd)
+void processBashCommands(struct node* cmd, struct proc* procs)
 {
+	// create the start of the background processes being run
+	struct proc* bgProcs = procs; 
 	char *argv[3];
 	char cmdOpts[MAX_LEN] = "";
 	char* cmdStr = malloc((strlen(cmd->val) + 1) * (sizeof(char)));
@@ -219,7 +269,7 @@ void processBashCommands(struct node* cmd)
 
 	//printf("%s %i\n", cmdOpts, strlen(cmdOpts));
 	
-		// check if there are options or nah.
+	// check if there are options or nah.
 	if (flag){ argv[1] = cmdOpts; argv[2] = NULL; }
 	else { argv[1] = NULL; argv[2] = NULL; }
 	
@@ -227,7 +277,7 @@ void processBashCommands(struct node* cmd)
 	// printf("%c\n", cmdOpts[strlen(cmdOpts) - 1]);
 	if (flag == 2)
 	{
-		runBackground(argv);
+		runBackground(argv, bgProcs);
 	}
 	else 
 	{
@@ -243,7 +293,7 @@ void processBashCommands(struct node* cmd)
 // 	4: all others
 // input: a list of commands 
 // ouput: the result of those commands
-void peek_commands(struct node* cmds) 
+void peek_commands(struct node* cmds, struct proc* procs) 
 {
 	char *temp = NULL;
 	char *home = getenv("HOME");
@@ -257,7 +307,7 @@ void peek_commands(struct node* cmds)
 			// https://man7.org/linux/man-pages/man2/kill.2.html
 			// https://man7.org/linux/man-pages/man7/signal.7.html
 			kill(0, SIGKILL);
-			exit(0);
+			_exit(0);
 		break;
 		case 2:
 		//https://man7.org/linux/man-pages/man3/getenv.3.html
@@ -286,7 +336,7 @@ void peek_commands(struct node* cmds)
 			printf("last foreground process, whatever tf that means.\n");	
 		break;
 		case 4:
-			processBashCommands(head);		
+			processBashCommands(head, procs);		
 		break;
 		default:
 		break;
@@ -298,8 +348,10 @@ void peek_commands(struct node* cmds)
 int main() 
 {
 	//char input[MAX_LEN + 1] = "";	
+	// *input[]
 	char **input = malloc(sizeof(char) * MAX_LEN + 1);
 	struct node* commands = NULL;
+	struct proc* bgProcs = NULL;
 	size_t len;
 	// Enter the smallsh command line
 	while(1) {
@@ -310,7 +362,7 @@ int main()
 			perror("getline");
 		}
 		commands = CreateCommandList(input);
-		peek_commands(commands);
+		peek_commands(commands, bgProcs);
 		destroyCommandList(commands);
 		fflush(stdin);
 		strcpy(*input, "");
