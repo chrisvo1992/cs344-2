@@ -39,6 +39,8 @@ struct node* CreateCommandNode(char* str)
 	struct node* newCommand = (struct node*)malloc(sizeof(struct node));
 	newCommand->val = calloc(strlen(str), sizeof(char));
 	strcpy(newCommand->val, str);
+	// doesnt seem as if prev is needed because of the srting processing
+	// being done within the program.
 	newCommand->prev = NULL;
 	newCommand->next = NULL;
 	return newCommand;
@@ -81,6 +83,8 @@ struct node* CreateCommandList(char** str)
 			newCmd = CreateCommandNode(token); 
 			tail = newCmd;
 			head = tail;
+			// doesnt seem as if prev is needed because of the srting processing
+			// being done within the program.
 			head->prev = NULL;
 			tail->next = NULL;
 		}
@@ -141,31 +145,51 @@ int checkCommand(struct node *cmd)
 	// all others
 	return 4;
 }
+///////////////////////////////////////////////////////////////////////////////
+//create null-terminated string, checking for redirect symbols
+//input:
+//output
+char* nullTermStrings(char* str)
+{
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // run as foreground process
 // input: pointer to a list of null-teminated strings
 // output: pid status
-int runForeground(char** arg)
+int runForeground(char** arg, char* rdArr)
 {
 	int childStatus;
 	pid_t spawnPid = fork();
-	switch(spawnPid)
+	int argCount = 0;
+	//printf(rdArr);
+	// probably will need to pass in arg count from main
+	if (argCount < MAX_LEN)
 	{
-		case -1:
-			perror("fork failed");
-			exit(1);	
-			break;
-		case 0:
-			printf("child(%d) running %s\n", getpid(), arg[0]);
-			execvp(arg[0], arg);
-			perror(arg[0]);
-			_exit(1);		
-			break;
-		default:
-			spawnPid = waitpid(spawnPid, &childStatus, 0);
-			break;
+		switch(spawnPid)
+		{
+			case -1:
+				perror("fork failed");
+				exit(1);	
+				break;
+			case 0:
+				printf("child(%d) running %s\n", getpid(), arg[0]);
+				execvp(arg[0], arg);
+				perror(arg[0]);
+				_exit(1);		
+				break;
+			default:
+				spawnPid = waitpid(spawnPid, &childStatus, 0);
+				break;
+		}	
+	}	
+	else 
+	{
+		printf("Max argument limit reached.\n");
+		return 0;
 	}
+
 	return spawnPid;
 }
 
@@ -177,7 +201,7 @@ int runForeground(char** arg)
 // input: pointer to a list of null-teminated strings and a pointer to a
 // list of background processes
 // output: pid status
-int runBackground(char** arg, struct proc* bgProcs)
+int runBackground(char** arg)
 {
 	/*
 	struct proc* newBgProc = NULL;
@@ -238,58 +262,52 @@ int runBackground(char** arg, struct proc* bgProcs)
 // null-terminated strings
 // input: the head of the linked list of commands
 // output: stdout
-void processBashCommands(struct node* cmd, struct proc* procs)
+void processBashCommands(struct node* cmd)
 {
 	// create the start of the background processes being run
 	int std_out = dup(STDOUT_FILENO);
 	int std_in = dup(STDIN_FILENO);
-	struct proc* bgProcs = procs; 
 	char *argv[3];
 	char cmdOpts[MAX_LEN] = "";
 	char* cmdStr = malloc((strlen(cmd->val) + 1) * (sizeof(char)));
 	strcpy(cmdStr, cmd->val);
 	cmd = cmd->next;
 	argv[0] = cmdStr;
-	int flag, in, out = 0;
+	char redirectArr[(MAX_LEN / 2) + 1] = "";
+	int flag = 0;
 	int fd;
 
 	// check for the redirection strings while processing the provided
-	// commands
+	// commands. the redirectArr will stay in line, representing a 
+	// 0 or 1 for stdin or stdout. this array will be passed into 
+	// either fg or bg functions 
 	while(cmd != NULL)
 	{
 		flag = 1;
-		// this will never be true on the first run
-		if (in) 
-		{
-			// wc < file
-			fd = open(cmd->prev->val, O_RDONLY);
-			if (fd < 0)
-			{
-				perror("open()");	
-				atexit(1);
-			} 
-			else 
-			{
-				dup2(fd, 0);
-			}
-		}
 		if (strcmp(cmd->val, "<") == 0)
 		{
-			printf("found %s\n", cmd->val);
-			in = 1;
+			strcat(redirectArr, cmd->val);
+			printf("procBash: %s\n", cmd->val);
+			cmd = cmd->next;
 		}
-		else if ((strcmp(cmd->val, ">") == 0))
+		if (strcmp(cmd->val, ">") == 0)
 		{
-		 	printf("found %s\n", cmd->val);
-			out = 1;
+			strcat(redirectArr, cmd->val);
+			printf("procBash: %s\n", cmd->val);
+			cmd = cmd->next;
 		}
-		else 
+		else
 		{
-		 	strcat(cmdOpts, cmd->val);
+			strcat(cmdOpts, cmd->val);
 			strcat(cmdOpts, "\0");
+			printf("procBash: %s\n", cmd->val);
+			cmd = cmd->next;
 		}
-		cmd = cmd->next;
+		//cmd = cmd->next;
 	}
+	// if terminated with null, ill know that the end has been reached
+	strcat(redirectArr, "\0"); 
+	printf("redirectArr: %s\n", redirectArr);
 
 	if (cmdOpts[strlen(cmdOpts) - 1] == '&')
 	{
@@ -309,11 +327,11 @@ void processBashCommands(struct node* cmd, struct proc* procs)
 	// printf("%c\n", cmdOpts[strlen(cmdOpts) - 1]);
 	if (flag == 2)
 	{
-		runBackground(argv, bgProcs);
+		runBackground(argv);
 	}
 	else 
 	{
-		runForeground(argv);	
+		runForeground(argv, redirectArr);	
 	}
 }
 
@@ -325,7 +343,7 @@ void processBashCommands(struct node* cmd, struct proc* procs)
 // 	4: all others
 // input: a list of commands 
 // ouput: the result of those commands
-void peek_commands(struct node* cmds, struct proc* procs) 
+void peek_commands(struct node* cmds) 
 {
 	char *temp = NULL;
 	char *home = getenv("HOME");
@@ -357,18 +375,18 @@ void peek_commands(struct node* cmds, struct proc* procs)
 					perror(head->next->val);
 				}
 			}
-			///*// can comment out at the end
+			/*// can comment out at the end
 			temp = get_current_dir_name();
 			printf("%s\n", temp);
 			free(temp);
-			//*/		
+			*/		
 		break;
 		case 3:
 			printf("print the exit status or the last terminal signal of the");
 			printf("last foreground process, whatever tf that means.\n");	
 		break;
 		case 4:
-			processBashCommands(head, procs);		
+			processBashCommands(head);		
 		break;
 		default:
 		break;
@@ -383,7 +401,6 @@ int main()
 	
 	char **input = malloc(sizeof(char) * MAX_LEN + 1);
 	struct node* commands = NULL;
-	struct proc* bgProcs = NULL;
 	size_t len;
 	// Enter the smallsh command line
 	while(1) {
@@ -394,7 +411,7 @@ int main()
 			perror("getline");
 		}
 		commands = CreateCommandList(input);
-		peek_commands(commands, bgProcs);
+		peek_commands(commands);
 		destroyCommandList(commands);
 		fflush(stdin);
 		strcpy(*input, "");
