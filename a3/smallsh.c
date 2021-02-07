@@ -186,107 +186,50 @@ int runBackground(char** arg, struct proc* bgProcs)
 	struct proc* ref = NULL;
 	*/
 	
-	int childStatus;
+	printf("arg: %s\n", *arg);
+	int std_out = dup(1);
+	int status;
 	pid_t parent;
 	// redirect stdin and stdout to /dev/null with dup2
-	int garbage = open("garbage.dat", O_WRONLY | O_TRUNC);
-	int newFd; 
+	///*
+	int garbage = open("g.dat", O_WRONLY | O_TRUNC);
 	if (garbage < 0)
 	{
-		perror("dup2() failed");	
+		perror("open() failed");	
 	}
 	else 
 	{
-		newFd = dup2(garbage,1); 
+		//newFd = dup2(garbage, 1); 
+		dup2(garbage, 1);
 	}
+	//*/
 	
 	parent = getpid();
 
 	pid_t spawnPid, wPid;
 	spawnPid = fork();
 		
+	printf("spawn after fork: %i\n", spawnPid);
+
 	if (spawnPid < 0)
 	{
 		perror("fork failed");
 		_exit(1);
 	}
-	else if (spawnPid == 0)
+	else if (spawnPid == 0) 
 	{
+		printf("spawnPid: (%d) exiting.\n", spawnPid);
 		execvp(arg[0], arg);
 		perror(arg[0]);
-		wPid = waitpid(spawnPid, &childStatus, WNOHANG);
-	}
-	else
-	{
 		_exit(0);
-	}
+	} 
+	// only executed by the parent
+	spawnPid = waitpid(spawnPid, &status, WNOHANG);
+	dup2(std_out, 1);
+	close(std_out);
+	printf("spawnPid: %i\n", spawnPid);
 
-	do
-	{
-		if (wPid < 0)
-		{
-			perror("waitpid");
-			_exit(1);
-		}
-		if (WIFEXITED(childStatus))
-		{
-			printf("child exited, status=%d\n", WEXITSTATUS(childStatus));
-		}
-		else if (WIFSIGNALED(childStatus))
-		{
-			printf("child killed (signal %d)\n", WTERMSIG(childStatus));
-		}
-		else if (WIFSTOPPED(childStatus))
-		{
-			printf("child stopped (signal %d)\n", WSTOPSIG(childStatus));
-     }
-	} while (WIFEXITED(childStatus) && !WIFSIGNALED(childStatus));
-
-	/*
-	if (bgProcs == NULL)
-	{
-		bgHead = malloc(sizeof(struct proc));
-		ref = bgHead;
-		bgHead->pid = spawnPid;
-		bgTail = bgHead;
-		bgHead->next = bgTail;
-		bgProcs = bgHead;
-		ref = bgProcs;
-	}	
-	newBgProc = malloc(sizeof(struct proc));
-	bgTail->next = newBgProc;
-	newBgProc->pid = spawnPid;
-	newBgProc->next = NULL; 	
-	bgTail = newBgProc;
-	*/
-
-	/*
-	if (spawnPid < 0)
-	{
-		perror("issue with the fork()");
-	}
-	else if (spawnPid)
-	{
-		printf("child executing\n");
-		spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
-		execvp(arg[0], arg);
-		perror("execvp");
-	}
-	*/
-	/*
-	else
-	{
-		printf("issues\n");		
-	}
-	*/
-	/*
-	while (ref != NULL)
-	{
-		printf("bg proc: %i\n", ref->pid);
-		ref = ref->next;
-	}
-	*/
-	close(newFd);
+	close(garbage);
 	return spawnPid;
 }
 
@@ -298,6 +241,8 @@ int runBackground(char** arg, struct proc* bgProcs)
 void processBashCommands(struct node* cmd, struct proc* procs)
 {
 	// create the start of the background processes being run
+	int std_out = dup(STDOUT_FILENO);
+	int std_in = dup(STDIN_FILENO);
 	struct proc* bgProcs = procs; 
 	char *argv[3];
 	char cmdOpts[MAX_LEN] = "";
@@ -305,18 +250,51 @@ void processBashCommands(struct node* cmd, struct proc* procs)
 	strcpy(cmdStr, cmd->val);
 	cmd = cmd->next;
 	argv[0] = cmdStr;
-	int flag = 0;
+	int flag, in, out = 0;
+	int fd;
 
+	// check for the redirection strings while processing the provided
+	// commands
 	while(cmd != NULL)
 	{
 		flag = 1;
-		strcat(cmdOpts, cmd->val);
-		strcat(cmdOpts, "\0");
+		// this will never be true on the first run
+		if (in) 
+		{
+			// wc < file
+			fd = open(cmd->prev->val, O_RDONLY);
+			if (fd < 0)
+			{
+				perror("open()");	
+				atexit(1);
+			} 
+			else 
+			{
+				dup2(fd, 0);
+			}
+		}
+		if (strcmp(cmd->val, "<") == 0)
+		{
+			printf("found %s\n", cmd->val);
+			in = 1;
+		}
+		else if ((strcmp(cmd->val, ">") == 0))
+		{
+		 	printf("found %s\n", cmd->val);
+			out = 1;
+		}
+		else 
+		{
+		 	strcat(cmdOpts, cmd->val);
+			strcat(cmdOpts, "\0");
+		}
 		cmd = cmd->next;
 	}
 
 	if (cmdOpts[strlen(cmdOpts) - 1] == '&')
 	{
+		dup2(std_in, 0);
+		dup2(std_out, 1);
 		cmdOpts[strlen(cmdOpts) - 1] = '\0';
 		flag = 2;
 	}
@@ -401,10 +379,8 @@ void peek_commands(struct node* cmds, struct proc* procs)
 //
 int main() 
 {
-	// set the controlling terminal
-	int fd = open("smallsh", O_RDONLY);
-	//char input[MAX_LEN + 1] = "";	
-	// *input[]
+	int status;
+	
 	char **input = malloc(sizeof(char) * MAX_LEN + 1);
 	struct node* commands = NULL;
 	struct proc* bgProcs = NULL;
@@ -423,6 +399,87 @@ int main()
 		fflush(stdin);
 		strcpy(*input, "");
 	}
+	// parts of this code might go in runBackground
+	/*
+	while (spawnPid != 0)
+	{
+		printf("parentPid: (%d) waiting...\n", spawnPid);
+		spawnPid = waitpid(spawnPid, &status, WNOHANG);	
+		printf("spawnPid while waiting: %i\n", spawnPid);
+	}
+	*/
 
+	/*
+	do
+	{
+		wPid = waitpid(spawnPid, &childStatus, WNOHANG);
+		execvp(arg[0], arg);
+		perror(arg[0]);
+		if (wPid < 0)
+		{
+			perror("waitpid");
+			_exit(1);
+		}
+		if (WIFEXITED(childStatus))
+		{
+			printf("child exited, status=%d\n", WEXITSTATUS(childStatus));
+		}
+		else if (WIFSIGNALED(childStatus))
+		{
+			printf("child killed (signal %d)\n", WTERMSIG(childStatus));
+		}
+		else if (WIFSTOPPED(childStatus))
+		{
+			printf("child stopped (signal %d)\n", WSTOPSIG(childStatus));
+    }
+	} while(wPid >= 0); 
+		//while (WIFEXITED(childStatus) && !WIFSIGNALED(childStatus));
+	*/
+
+	/*
+	if (bgProcs == NULL)
+	{
+		bgHead = malloc(sizeof(struct proc));
+		ref = bgHead;
+		bgHead->pid = spawnPid;
+		bgTail = bgHead;
+		bgHead->next = bgTail;
+		bgProcs = bgHead;
+		ref = bgProcs;
+	}	
+	newBgProc = malloc(sizeof(struct proc));
+	bgTail->next = newBgProc;
+	newBgProc->pid = spawnPid;
+	newBgProc->next = NULL; 	
+	bgTail = newBgProc;
+	*/
+
+	/*
+	if (spawnPid < 0)
+	{
+		perror("issue with the fork()");
+	}
+	else if (spawnPid)
+	{
+		printf("child executing\n");
+		spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
+		execvp(arg[0], arg);
+		perror("execvp");
+	}
+	*/
+	/*
+	else
+	{
+		printf("issues\n");		
+	}
+	*/
+	/*
+	while (ref != NULL)
+	{
+		printf("bg proc: %i\n", ref->pid);
+		ref = ref->next;
+	}
+	*/
+	//close(newFd);
 	return 0;
 }
