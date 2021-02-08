@@ -145,26 +145,27 @@ int checkCommand(struct node *cmd)
 	// all others
 	return 4;
 }
-///////////////////////////////////////////////////////////////////////////////
-//create null-terminated string, checking for redirect symbols
-//input:
-//output
-char* nullTermStrings(char* str)
-{
-
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // run as foreground process
 // input: pointer to a list of null-teminated strings
 // output: pid status
-int runForeground(char** arg, char* rdArr)
+int runForeground(char** arg, struct node* cmd)
 {
+	char* startingDir = getcwd(NULL, 0); 
+	printf("cwd is %s\n", startingDir);
+	
+	int std_out = dup(1);
+	int std_in = dup(0);
+	int fd;
 	int childStatus;
 	pid_t spawnPid = fork();
 	int argCount = 0;
-	//printf(rdArr);
+	int in = 0;
+	int out = 0;
+
 	// probably will need to pass in arg count from main
+	///*
 	if (argCount < MAX_LEN)
 	{
 		switch(spawnPid)
@@ -175,13 +176,109 @@ int runForeground(char** arg, char* rdArr)
 				break;
 			case 0:
 				printf("child(%d) running %s\n", getpid(), arg[0]);
-				execvp(arg[0], arg);
-				perror(arg[0]);
-				_exit(1);		
+				while (cmd != NULL)
+				{
+					//check for these
+					//wc < file
+					//file_with_commands < some_data_file
+					if (strcmp(cmd->val, "<") == 0)
+					in++;
+					{
+						// if < is the first command, this will never run
+						if (cmd->prev != NULL)
+						{
+							// try to open the file in startingDir
+							fd = open(cmd->prev->val, O_RDONLY);
+							// there is not a file_with_commands
+							if (fd < 0)
+							{
+								// try the /bin dir
+								if (chdir("/bin") == 0)
+								{
+									fd = open(cmd->prev->val, O_RDONLY);
+									//if there is not a corresponding binary file
+									//just leave
+									if (fd < 0)
+									{
+										perror("open()");	
+										_exit(1);
+										break;
+									}
+									//there is a bin/<cmd>
+									else
+									{
+										//assign stdin
+										dup2(fd, 0);
+										// run the command in the startingDir
+										chdir(startingDir);
+										execvp(arg[0], arg);
+										// revert stdin to original
+										dup2(std_in, 0);
+										close(fd);
+										perror(arg[0]);
+										_exit(1);
+									}
+								}
+								else
+								{
+									perror("chdir()");
+								}
+							}
+							// there is a file_with_commands
+							else
+							{
+								//assign stdin, no need to chdir again
+								dup2(fd, 0);
+								execvp(arg[0], arg);
+								dup2(std_in, 0);
+								chdir(startingDir);
+								close(fd);
+								perror(arg[0]);
+								_exit(1);
+							}
+						}
+						// break if > is the first command
+						else if (strcmp(cmd->val, ">") == 0)
+						{
+							out++;
+							// if < is the last command, this will never run
+							if (cmd->next != NULL)
+							{
+							// try to open the file in startingDir
+								fd = open(cmd->next->val, O_WRONLY | O_TRUNC | O_CREAT);
+								// there is not a outfile
+								if (fd < 0)
+								{
+									perror("open()");
+								}
+								// there is a file_with_commands
+								else
+								{
+									//assign stdin, no need to chdir again
+									dup2(fd, 1);
+									execvp(arg[0], arg);
+									dup2(std_out, 1);
+									close(fd);
+									perror(arg[0]);
+									_exit(1);
+								}
+							}
+							// the last arg cannot be >
+							else
+							{
+								break;
+							}
+					}
+					cmd = cmd->next;
+				}
+				//execvp(arg[0], arg);
+				//perror(arg[0]);
+				//_exit(1);		
 				break;
 			default:
 				spawnPid = waitpid(spawnPid, &childStatus, 0);
 				break;
+			}
 		}	
 	}	
 	else 
@@ -189,7 +286,8 @@ int runForeground(char** arg, char* rdArr)
 		printf("Max argument limit reached.\n");
 		return 0;
 	}
-
+	//*/
+	free(startingDir);
 	return spawnPid;
 }
 
@@ -201,7 +299,7 @@ int runForeground(char** arg, char* rdArr)
 // input: pointer to a list of null-teminated strings and a pointer to a
 // list of background processes
 // output: pid status
-int runBackground(char** arg)
+int runBackground(char** arg, struct node* cmd)
 {
 	/*
 	struct proc* newBgProc = NULL;
@@ -216,7 +314,7 @@ int runBackground(char** arg)
 	pid_t parent;
 	// redirect stdin and stdout to /dev/null with dup2
 	///*
-	int garbage = open("g.dat", O_WRONLY | O_TRUNC);
+	int garbage = open("/dev/null", O_WRONLY | O_TRUNC);
 	if (garbage < 0)
 	{
 		perror("open() failed");	
@@ -264,75 +362,59 @@ int runBackground(char** arg)
 // output: stdout
 void processBashCommands(struct node* cmd)
 {
-	// create the start of the background processes being run
-	int std_out = dup(STDOUT_FILENO);
-	int std_in = dup(STDIN_FILENO);
+	struct node* ref = cmd;
 	char *argv[3];
 	char cmdOpts[MAX_LEN] = "";
 	char* cmdStr = malloc((strlen(cmd->val) + 1) * (sizeof(char)));
 	strcpy(cmdStr, cmd->val);
 	cmd = cmd->next;
 	argv[0] = cmdStr;
-	char redirectArr[(MAX_LEN / 2) + 1] = "";
 	int flag = 0;
-	int fd;
 
-	// check for the redirection strings while processing the provided
-	// commands. the redirectArr will stay in line, representing a 
-	// 0 or 1 for stdin or stdout. this array will be passed into 
-	// either fg or bg functions 
+	// at this point, all this is being used for is to check the end
+	// of the list of commands for &, <, >, and to create argv
 	while(cmd != NULL)
 	{
 		flag = 1;
 		if (strcmp(cmd->val, "<") == 0)
 		{
-			strcat(redirectArr, cmd->val);
-			printf("procBash: %s\n", cmd->val);
 			cmd = cmd->next;
 		}
-		if (strcmp(cmd->val, ">") == 0)
+		else if ((strcmp(cmd->val, ">") == 0))
 		{
-			strcat(redirectArr, cmd->val);
-			printf("procBash: %s\n", cmd->val);
 			cmd = cmd->next;
 		}
 		else
 		{
 			strcat(cmdOpts, cmd->val);
 			strcat(cmdOpts, "\0");
-			printf("procBash: %s\n", cmd->val);
 			cmd = cmd->next;
 		}
-		//cmd = cmd->next;
 	}
-	// if terminated with null, ill know that the end has been reached
-	strcat(redirectArr, "\0"); 
-	printf("redirectArr: %s\n", redirectArr);
 
 	if (cmdOpts[strlen(cmdOpts) - 1] == '&')
 	{
-		dup2(std_in, 0);
-		dup2(std_out, 1);
+		printf("last char is &\n");
 		cmdOpts[strlen(cmdOpts) - 1] = '\0';
 		flag = 2;
 	}
 
 	//printf("%s %i\n", cmdOpts, strlen(cmdOpts));
 	
-	// check if there are options or nah.
+	// check if there are options or nah. 
 	if (flag){ argv[1] = cmdOpts; argv[2] = NULL; }
 	else { argv[1] = NULL; argv[2] = NULL; }
 	
 	// choose whether it is a foreground or background process
-	// printf("%c\n", cmdOpts[strlen(cmdOpts) - 1]);
 	if (flag == 2)
 	{
-		runBackground(argv);
+		runBackground(argv, ref);
 	}
 	else 
 	{
-		runForeground(argv, redirectArr);	
+		runForeground(argv, ref);	
 	}
+	free(cmdStr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

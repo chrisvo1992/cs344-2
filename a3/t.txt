@@ -1,4 +1,2 @@
-all
-the
-things
-
+!/bin/bash
+wc
