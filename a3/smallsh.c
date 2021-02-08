@@ -152,11 +152,9 @@ int checkCommand(struct node *cmd)
 // output: pid status
 int runForeground(char** arg, struct node* cmd)
 {
-	char* startingDir = getcwd(NULL, 0); 
-	printf("cwd is %s\n", startingDir);
-	
-	int std_out = dup(1);
-	int std_in = dup(0);
+	char* cwd;
+	int std_out = dup(STDOUT_FILENO);
+	int std_in = dup(STDIN_FILENO);
 	int fd;
 	int childStatus;
 	pid_t spawnPid = fork();
@@ -176,110 +174,89 @@ int runForeground(char** arg, struct node* cmd)
 				break;
 			case 0:
 				printf("child(%d) running %s\n", getpid(), arg[0]);
+				// get to the in and out files
 				while (cmd != NULL)
 				{
-					//check for these
-					//wc < file
-					//file_with_commands < some_data_file
 					if (strcmp(cmd->val, "<") == 0)
-					in++;
 					{
-						// if < is the first command, this will never run
-						if (cmd->prev != NULL)
+						in = 1;
+						// check for the next input to use for stdin
+						printf("trying current dir, file: %s\n", cmd->next->val);
+						fflush(stdout);
+						if (cmd->next != NULL)
 						{
-							// try to open the file in startingDir
-							fd = open(cmd->prev->val, O_RDONLY);
-							// there is not a file_with_commands
-							if (fd < 0)
+							fd = open(cmd->next->val, O_RDONLY);
+							fcntl(fd, F_SETFD, FD_CLOEXEC);
+						}
+						else
+						{
+							fd = 0;
+						}
+
+						if (fd > 0)
+						{
+							printf("duping\n");
+							int result = dup2(fd, STDIN_FILENO);		
+							if (result < 0) 
 							{
-								// try the /bin dir
-								if (chdir("/bin") == 0)
-								{
-									fd = open(cmd->prev->val, O_RDONLY);
-									//if there is not a corresponding binary file
-									//just leave
-									if (fd < 0)
-									{
-										perror("open()");	
-										_exit(1);
-										break;
-									}
-									//there is a bin/<cmd>
-									else
-									{
-										//assign stdin
-										dup2(fd, 0);
-										// run the command in the startingDir
-										chdir(startingDir);
-										execvp(arg[0], arg);
-										// revert stdin to original
-										dup2(std_in, 0);
-										close(fd);
-										perror(arg[0]);
-										_exit(1);
-									}
-								}
-								else
-								{
-									perror("chdir()");
-								}
-							}
-							// there is a file_with_commands
-							else
-							{
-								//assign stdin, no need to chdir again
-								dup2(fd, 0);
-								execvp(arg[0], arg);
-								dup2(std_in, 0);
-								chdir(startingDir);
-								close(fd);
-								perror(arg[0]);
-								_exit(1);
+								perror("dup2()");
+								exit(1);
 							}
 						}
-						// break if > is the first command
-						else if (strcmp(cmd->val, ">") == 0)
+						else 
 						{
-							out++;
-							// if < is the last command, this will never run
-							if (cmd->next != NULL)
-							{
-							// try to open the file in startingDir
-								fd = open(cmd->next->val, O_WRONLY | O_TRUNC | O_CREAT);
-								// there is not a outfile
-								if (fd < 0)
-								{
-									perror("open()");
-								}
-								// there is a file_with_commands
-								else
-								{
-									//assign stdin, no need to chdir again
-									dup2(fd, 1);
-									execvp(arg[0], arg);
-									dup2(std_out, 1);
-									close(fd);
-									perror(arg[0]);
-									_exit(1);
-								}
-							}
-							// the last arg cannot be >
-							else
-							{
-								break;
-							}
-					}
-					cmd = cmd->next;
+							perror(cmd->next->val);
+						}
+					}	
+
+					if (strcmp(cmd->val, ">") == 0)
+					{
+						out = 1;
+						// check for the next input to use for stdout
+						printf("trying current dir\n");
+						if (cmd->next != NULL)
+						{
+							fd = open(cmd->next->val, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+							fcntl(fd, F_SETFD, FD_CLOEXEC);
+						}
+						else 
+						{
+							fd = 0;	
+						}
+						// if the file can be opened for stdout
+						if (fd > 0)
+						{
+							printf("duping\n");
+							dup2(fd, STDOUT_FILENO);		
+						}
+						else 
+						{
+							perror(cmd->next->val);	
+						}
+					}	
+					cmd = cmd->next;	
 				}
-				//execvp(arg[0], arg);
-				//perror(arg[0]);
-				//_exit(1);		
+
+				if (in || out) 
+				{
+					execlp(arg[0], arg[0], NULL);
+					perror(arg[0]);
+					_exit(1);
+				}
+				else 
+				{
+					execvp(arg[0], arg);
+					perror(arg[0]);
+					_exit(1);
+				}
+				dup2(std_in, STDIN_FILENO);
+				dup2(std_out, STDOUT_FILENO);
+				//close(fd); // using fcntl
 				break;
 			default:
 				spawnPid = waitpid(spawnPid, &childStatus, 0);
 				break;
-			}
-		}	
+		}
 	}	
 	else 
 	{
@@ -287,7 +264,6 @@ int runForeground(char** arg, struct node* cmd)
 		return 0;
 	}
 	//*/
-	free(startingDir);
 	return spawnPid;
 }
 
@@ -301,15 +277,7 @@ int runForeground(char** arg, struct node* cmd)
 // output: pid status
 int runBackground(char** arg, struct node* cmd)
 {
-	/*
-	struct proc* newBgProc = NULL;
-	struct proc* bgHead = NULL;
-	struct proc* bgTail = NULL;
-	struct proc* ref = NULL;
-	*/
-	
 	printf("arg: %s\n", *arg);
-	int std_out = dup(1);
 	int status;
 	pid_t parent;
 	// redirect stdin and stdout to /dev/null with dup2
@@ -347,10 +315,7 @@ int runBackground(char** arg, struct node* cmd)
 	} 
 	// only executed by the parent
 	spawnPid = waitpid(spawnPid, &status, WNOHANG);
-	dup2(std_out, 1);
-	close(std_out);
 	printf("spawnPid: %i\n", spawnPid);
-
 	close(garbage);
 	return spawnPid;
 }
@@ -358,6 +323,7 @@ int runBackground(char** arg, struct node* cmd)
 ///////////////////////////////////////////////////////////////////////////////
 // constructs the argument list from the array of pointers to 
 // null-terminated strings
+// the syntax is: command [arg1 arg2 ...] [< in_file] [> out_file]
 // input: the head of the linked list of commands
 // output: stdout
 void processBashCommands(struct node* cmd)
@@ -366,6 +332,7 @@ void processBashCommands(struct node* cmd)
 	char *argv[3];
 	char cmdOpts[MAX_LEN] = "";
 	char* cmdStr = malloc((strlen(cmd->val) + 1) * (sizeof(char)));
+	// 2048 args. worst case, every other input is < or >
 	strcpy(cmdStr, cmd->val);
 	cmd = cmd->next;
 	argv[0] = cmdStr;
@@ -376,12 +343,17 @@ void processBashCommands(struct node* cmd)
 	while(cmd != NULL)
 	{
 		flag = 1;
+		// if the < or > are encountered, set a symbol to splice the string
+		// It still needs to be read this way because the last char & is
+		// being checked. 
 		if (strcmp(cmd->val, "<") == 0)
 		{
+			strcat(cmdOpts, "#");
 			cmd = cmd->next;
 		}
 		else if ((strcmp(cmd->val, ">") == 0))
 		{
+			strcat(cmdOpts, "#");
 			cmd = cmd->next;
 		}
 		else
@@ -392,15 +364,33 @@ void processBashCommands(struct node* cmd)
 		}
 	}
 
+	// check the last character before changing string
 	if (cmdOpts[strlen(cmdOpts) - 1] == '&')
 	{
 		printf("last char is &\n");
-		cmdOpts[strlen(cmdOpts) - 1] = '\0';
 		flag = 2;
 	}
-
 	//printf("%s %i\n", cmdOpts, strlen(cmdOpts));
 	
+
+	///*
+	//printf("cmdOpts: %s\n", cmdOpts);
+	// get rid of all the cmdOpts characters after the first # is found.
+	for (int i = 0; i < strlen(cmdOpts); ++i)
+	{
+		if (cmdOpts[i] == '#')
+		{
+			// write over the remaining characters with nulls
+			for (int j = i; j < strlen(cmdOpts); ++j)
+			{
+				cmdOpts[j] = '\0';
+			}
+		}
+	}	
+	//printf("cmdOpts: %s\n", cmdOpts);
+	//*/
+
+
 	// check if there are options or nah. 
 	if (flag){ argv[1] = cmdOpts; argv[2] = NULL; }
 	else { argv[1] = NULL; argv[2] = NULL; }
@@ -479,11 +469,13 @@ void peek_commands(struct node* cmds)
 //
 int main() 
 {
-	int status;
-	
+
+	char smallsh[8] = "smallsh";
+	setenv(smallsh, "smallsh", 1);
 	char **input = malloc(sizeof(char) * MAX_LEN + 1);
 	struct node* commands = NULL;
 	size_t len;
+
 	// Enter the smallsh command line
 	while(1) {
 			printf(": ");

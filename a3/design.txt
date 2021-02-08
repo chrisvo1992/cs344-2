@@ -58,34 +58,3 @@ while the user remains in the shell:
 		}
 	}
 	
-/////////////////////////delete below	
-		// this will never be true on the first run
-		if (in) 
-		{
-			// wc < file
-			fd = open(cmd->prev->val, O_RDONLY);
-			if (fd < 0)
-			{
-				perror("open()");	
-				atexit(1);
-			} 
-			else 
-			{
-				dup2(fd, 0);
-			}
-		}
-		if (out)
-		{
-			//wc > file
-			fd = open(cmd->val
-		}
-		if (strcmp(cmd->val, "<") == 0)
-		{
-			in = 1;
-		}
-		else if ((strcmp(cmd->val, ">") == 0))
-		{
-			out = 1;
-		}
-	
-		
