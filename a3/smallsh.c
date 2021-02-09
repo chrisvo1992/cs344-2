@@ -39,8 +39,7 @@ struct node* CreateCommandNode(char* str)
 	struct node* newCommand = (struct node*)malloc(sizeof(struct node));
 	newCommand->val = calloc(strlen(str) + 1, sizeof(char));
 	strcpy(newCommand->val, str);
-	// doesnt seem as if prev is needed because of the srting processing
-	// being done within the program.
+	// havent used prev but...its there
 	newCommand->prev = NULL;
 	newCommand->next = NULL;
 	return newCommand;
@@ -57,6 +56,13 @@ struct node* CreateCommandList(char** str)
 	struct node* tail = NULL;
 	struct node* curr;
 	char* savePtr;
+
+	// prevent segfault when user only enters newline chars
+	if (*str[0] == '\n' || *str[0] == '\t' || *str[0] == '\r' || *str[0] == '#') 
+	{	
+		return NULL;
+	}
+
 	// this is just to null terminate the last char in the string
 	// going on 3 hours of sleep but this is the easiest way that I see,
 	// right now, to remove the newline character fromt *str. Might be
@@ -83,8 +89,8 @@ struct node* CreateCommandList(char** str)
 			newCmd = CreateCommandNode(token); 
 			tail = newCmd;
 			head = tail;
-			// doesnt seem as if prev is needed because of the srting processing
-			// being done within the program.
+			// doesnt seem as if prev is needed because of the string processing
+			// being done but its here just in case.
 			head->prev = NULL;
 			tail->next = NULL;
 		}
@@ -160,7 +166,7 @@ int redirection(struct node* cmd)
 		{
 			redirect = 1;
 			// check for the next input to use for stdin
-			printf("trying current dir, file: %s\n", cmd->next->val);
+			//printf("trying current dir, file: %s\n", cmd->next->val);
 			//fflush(stdin);
 			if (cmd->next != NULL)
 			{
@@ -174,7 +180,7 @@ int redirection(struct node* cmd)
 
 			if (fd > 0)
 			{
-				printf("duping\n");
+				//printf("duping\n");
 				int result = dup2(fd, STDIN_FILENO);		
 				if (result < 0) 
 				{
@@ -194,13 +200,14 @@ int redirection(struct node* cmd)
 			// check for the next input to use for stdout
 			if (cmd->next != NULL)
 			{
-				printf(cmd->next->val);
-				printf("\n");
+				//printf(cmd->next->val);
+				//printf("\n");
+				/*
 				for (int i = 0; i < strlen(cmd->next->val); ++i)
 				{
 					printf("%c ", cmd->next->val[i]);
 				}
-				printf("\n");
+				*/
 				fd = open(cmd->next->val, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 				fcntl(fd, F_SETFD, FD_CLOEXEC);
 			}
@@ -211,7 +218,7 @@ int redirection(struct node* cmd)
 			// if the file can be opened for stdout
 			if (fd > 0)
 			{
-				printf("duping\n");
+				//printf("duping\n");
 				dup2(fd, STDOUT_FILENO);		
 			}
 			else 
@@ -228,12 +235,12 @@ int redirection(struct node* cmd)
 ///////////////////////////////////////////////////////////////////////////////
 // run as foreground process
 // input: pointer to a list of null-teminated strings
-// output: pid status
-int runForeground(char** arg, char* opts, struct node* cmd)
+// output: child status
+int runForeground(char** arg, char* opts, struct node* cmd, int childStatus)
 {
 	int std_out = dup(STDOUT_FILENO);
 	int std_in = dup(STDIN_FILENO);
-	int childStatus;
+	int* status = &childStatus;
 	pid_t spawnPid = fork();
 	int argCount = 0;
 	int in_or_out = 0;
@@ -254,12 +261,12 @@ int runForeground(char** arg, char* opts, struct node* cmd)
 				/*
 				if (in_or_out) 
 				{
-					char* str = malloc(sizeof(strlen(arg[0] + 1) * sizeof(char)));
+					char* str = calloc(strlen(arg[0] + 1), sizeof(char));
 					strcpy(str, arg[0]);
 					strcat(str, "\0");
 					strcat(str, opts);				
 					strcat(str, "\0");	
-					execlp(arg[0], arg[0], (char*)NULL);
+					execlp(arg[0], str, (char*)NULL);
 					free(str);
 					perror(arg[0]);
 					_exit(1);
@@ -271,6 +278,7 @@ int runForeground(char** arg, char* opts, struct node* cmd)
 					_exit(1);
 				}
 				*/
+				///*
 				if (in_or_out)
 				{
 					execlp(arg[0], arg[0], NULL);
@@ -283,12 +291,13 @@ int runForeground(char** arg, char* opts, struct node* cmd)
 					perror(arg[0]);
 					_exit(1);
 				}
+				//*/
 				dup2(std_in, STDIN_FILENO);
 				dup2(std_out, STDOUT_FILENO);
 				//close(fd); // using fcntl
 				break;
 			default:
-				spawnPid = waitpid(spawnPid, &childStatus, 0);
+				spawnPid = waitpid(spawnPid, status, 0);
 				break;
 		}
 	}	
@@ -297,10 +306,7 @@ int runForeground(char** arg, char* opts, struct node* cmd)
 		printf("Max argument limit reached.\n");
 		return 0;
 	}
-	//dup2(std_in, STDIN_FILENO);
-	//dup2(std_out, STDOUT_FILENO);
-	//*/
-	return spawnPid;
+	return 0; 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -317,13 +323,8 @@ int runBackground(char** arg, char* opts, struct node* cmd)
 	int std_in = dup(STDIN_FILENO);
 	int status;
 	int in_or_out = redirection(cmd);
-	// idk why but maybe
-	pid_t parent = getpid();
-
 	pid_t spawnPid;
 	spawnPid = fork();
-		
-	printf("spawn after fork: %i\n", spawnPid);
 
 	if (spawnPid < 0)
 	{
@@ -332,8 +333,11 @@ int runBackground(char** arg, char* opts, struct node* cmd)
 	}
 	else if (spawnPid == 0) 
 	{
+		printf("process(%i) running\n", getpid());
+		fflush(stdout);
 		if (in_or_out) 
 		{
+			/*
 			int garbage = open("g.dat", O_WRONLY | O_TRUNC);
 			fcntl(garbage, F_SETFD, FD_CLOEXEC);
 			if (garbage < 0)
@@ -344,12 +348,20 @@ int runBackground(char** arg, char* opts, struct node* cmd)
 			{
 				dup2(garbage, STDOUT_FILENO);
 			}
-			execlp(arg[0], opts, NULL);
+			*/
+			//execlp(arg[0], arg[1], NULL);
+			execvp(arg[0], arg);
 			perror(arg[0]);
 			_exit(1);
 		}
 		else
 		{
+			int out = open("/dev/null", O_RDWR | O_TRUNC);
+			int in = open("/dev/null", O_RDWR | O_TRUNC);
+			fcntl(out, F_SETFD, FD_CLOEXEC);
+			fcntl(in, F_SETFD, FD_CLOEXEC);
+			dup2(out, STDOUT_FILENO);
+			dup2(in, STDIN_FILENO);
 			execvp(arg[0], arg);
 			perror(arg[0]);
 			_exit(1);
@@ -359,7 +371,6 @@ int runBackground(char** arg, char* opts, struct node* cmd)
 	dup2(std_out, STDOUT_FILENO);
 	dup2(std_in, STDIN_FILENO);
 	spawnPid = waitpid(spawnPid, &status, WNOHANG);
-	printf("spawnPid: %i\n", spawnPid);
 
 	return spawnPid;
 }
@@ -370,13 +381,12 @@ int runBackground(char** arg, char* opts, struct node* cmd)
 // the syntax is: command [arg1 arg2 ...] [< in_file] [> out_file]
 // input: the head of the linked list of commands
 // output: stdout
-void processBashCommands(struct node* cmd)
+void processBashCommands(struct node* cmd, int status)
 {
 	struct node* ref = cmd;
 	char *argv[3];
 	char cmdOpts[MAX_LEN] = "";
 	char* cmdStr = malloc((strlen(cmd->val) + 1) * (sizeof(char)));
-	// 2048 args. worst case, every other input is < or >
 	strcpy(cmdStr, cmd->val);
 	cmd = cmd->next;
 	argv[0] = cmdStr;
@@ -411,7 +421,7 @@ void processBashCommands(struct node* cmd)
 	// check the last character before changing string
 	if (cmdOpts[strlen(cmdOpts) - 1] == '&')
 	{
-		printf("last char is &\n");
+		//printf("last char is &\n");
 		cmdOpts[strlen(cmdOpts) - 1] = '\0';
 		flag = 2;
 	}
@@ -445,7 +455,7 @@ void processBashCommands(struct node* cmd)
 	}
 	else 
 	{
-		runForeground(argv, cmdOpts, ref);	
+		runForeground(argv, cmdOpts, ref, status);	
 	}
 	free(cmdStr);
 }
@@ -458,9 +468,8 @@ void processBashCommands(struct node* cmd)
 // 	4: all others
 // input: a list of commands 
 // ouput: the result of those commands
-void peek_commands(struct node* cmds) 
+void peek_commands(struct node* cmds, int statusPtr) 
 {
-	char *temp = NULL;
 	char *home = getenv("HOME");
 	struct node* head = cmds;
 	int cmdType = checkCommand(head);	
@@ -497,11 +506,10 @@ void peek_commands(struct node* cmds)
 			*/		
 		break;
 		case 3:
-			printf("print the exit status or the last terminal signal of the");
-			printf("last foreground process, whatever tf that means.\n");	
+			printf("exit status %d\n", statusPtr); 
 		break;
 		case 4:
-			processBashCommands(head);		
+			processBashCommands(head, statusPtr);		
 		break;
 		default:
 		break;
@@ -512,37 +520,37 @@ void peek_commands(struct node* cmds)
 //
 int main() 
 {
-
 	char smallsh[8] = "smallsh";
 	setenv(smallsh, "smallsh", 1);
 	char **input = malloc(sizeof(char) * MAX_LEN + 1);
 	struct node* commands = NULL;
 	size_t len;
+	int status = 0;
+	// im not able to think of how to integrate this array into the program.
+	// i need more time, im slow
+	int bgProc[200];
+	for (int i = 0; i < 200; ++i) { bgProc[i] = 0; }
 
 	// Enter the smallsh command line
-	while(1) {
-			printf(": ");
+	while(1) 
+	{
+		printf(": ");
 		// read the input
-		if(getline(input, &len, stdin) == -1) {
+		if(getline(input, &len, stdin) < 1) {
 			printf("Yea, no...\n");
 			perror("getline");
 		}
 		commands = CreateCommandList(input);
-		peek_commands(commands);
-		destroyCommandList(commands);
+		if (commands != NULL)
+		{
+			peek_commands(commands, status);
+			destroyCommandList(commands);
+		}
 		fflush(stdin);
+		fflush(stdout);
 		strcpy(*input, "");
 	}
-	// parts of this code might go in runBackground
-	/*
-	while (spawnPid != 0)
-	{
-		printf("parentPid: (%d) waiting...\n", spawnPid);
-		spawnPid = waitpid(spawnPid, &status, WNOHANG);	
-		printf("spawnPid while waiting: %i\n", spawnPid);
-	}
-	*/
-
+	// somehow I thought i'd get to this
 	/*
 	do
 	{
@@ -570,50 +578,6 @@ int main()
 		//while (WIFEXITED(childStatus) && !WIFSIGNALED(childStatus));
 	*/
 
-	/*
-	if (bgProcs == NULL)
-	{
-		bgHead = malloc(sizeof(struct proc));
-		ref = bgHead;
-		bgHead->pid = spawnPid;
-		bgTail = bgHead;
-		bgHead->next = bgTail;
-		bgProcs = bgHead;
-		ref = bgProcs;
-	}	
-	newBgProc = malloc(sizeof(struct proc));
-	bgTail->next = newBgProc;
-	newBgProc->pid = spawnPid;
-	newBgProc->next = NULL; 	
-	bgTail = newBgProc;
-	*/
-
-	/*
-	if (spawnPid < 0)
-	{
-		perror("issue with the fork()");
-	}
-	else if (spawnPid)
-	{
-		printf("child executing\n");
-		spawnPid = waitpid(spawnPid, &childStatus, WNOHANG);
-		execvp(arg[0], arg);
-		perror("execvp");
-	}
-	*/
-	/*
-	else
-	{
-		printf("issues\n");		
-	}
-	*/
-	/*
-	while (ref != NULL)
-	{
-		printf("bg proc: %i\n", ref->pid);
-		ref = ref->next;
-	}
-	*/
-	//close(newFd);
+	free(input);
 	return 0;
 }
