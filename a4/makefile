@@ -1,9 +1,9 @@
 CFLAGS = -g --std=gnu99 -Wall
 
-all: sandbox 
+all: main 
 
-sandbox:
-	gcc $(CFLAGS) -o sandbox sandbox.c -lpthread
+main:
+	gcc $(CFLAGS) -o main main.c -lpthread
 
 clean:
-	rm sandbox
+	rm main 

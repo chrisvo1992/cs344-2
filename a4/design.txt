@@ -1,3 +1,27 @@
 
 
 
+
+create a buffer for 80 characters
+create a buffer for the plus signs.
+
+
+1 while the buffer is not full, get the input
+	
+	place input in the buffer
+	increment the count by 1 for each
+	character read
+
+2 if a sequence of characters matches STOP, check
+the surrounding characters for other characters
+
+	if there are an even number of + symbols that are
+	sequential, convert them to a carrot symbol and 
+	send to the buffer
+
+
+3 if there are no surrounding characters, stop
+processing stdin.
+
+4 send what is in the buffer to stdout
+	
