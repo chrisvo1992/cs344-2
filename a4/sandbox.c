@@ -89,6 +89,7 @@ void* perform_work(void* argument) {
 
 // Conditional variables for synchronization mechanisms
 // shared resource
+/*
 int buffer[SIZE];
 // number of items in the buffer, shared resource
 int count = 0;
@@ -140,10 +141,10 @@ void* producer(void* args) {
 		}
 		put_item(value);
 		// give up the lock
-		pthread_mutex_unlock(&mutex);
+		ptHread_mutex_unlock(&mutex);
 		// print messae outside the critical section
 		printf("PROD %d\n", value);
-	}
+}
 	return NULL;
 }
 // get the next item from the shared buffer
@@ -180,11 +181,123 @@ void* consumer(void* args) {
 	}
 	return NULL;
 }
+*/
+
+// Producer-Consumer Using Condition variable
+int buffer[SIZE];
+// number of items in the buffer, shared resource
+int count = 0;
+// index where the profucer will put the next item
+int prod_idx = 0;
+// index where the consumer will pick up the next item
+int con_idx = 0;
+// how many items will be produced before the END_MARKER
+int num_items = 0;
+
+// init the mitex
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// init the condition variable
+pthread_cond_t full = PTHREAD_COND_INITIALIZER;
+pthread_cond_t empty = PTHREAD_COND_INITIALIZER;
+
+// produces a tandon integer between [0, 1000] unless it is the last 
+// item to be produced in which case the value -1 is returned.
+int produce_item(int i) {
+	int value;
+	if (i == num_items) {
+		value = END_MARKER;
+	} else {
+		value = rand() % 1000;
+	}
+	return value;
+}
+
+// put an item in the shared buffer
+int put_item(int value) {
+	buffer[prod_idx] = value;
+// increment the index where the next item will be put. roll over to the 
+// start of the buffer if teh item was placed in the last slot in the buffer
+	prod_idx = (prod_idx + 1) % SIZE;
+	count++;
+	return value;
+}
+
+// function that the producer thread will run. produce an item and put in the 
+// buffer only if there is space in teh buffer. if the buffer is full, then
+// wait until there is space in the buffer
+void *producer(void *args) {
+	for (int i = 0; i < num_items + 1; i++) {
+		// produce the item outside the critical section
+		int value = produce_item(i);
+		// lock the mutex before checking where there is space in the buffer
+		pthread_mutex_lock(&mutex);
+		while (count == SIZE) {
+			// buffer is full. wait for the consumer to signal that the buffer 
+			// has space
+			pthread_cond_wait(&empty, &mutex);
+		}
+		put_item(value);
+		// signal to the consumer that the buffer is no longer empty
+		pthread_cond_signal(&full);
+		// unlock the mutex
+		pthread_mutex_unlock(&mutex);
+		printf("PROD %d\n", value);
+	}
+
+	return NULL;
+}
+
+// get the next item in the bufer
+int get_item() {
+	int value = buffer[con_idx];
+	// incremt the index from which the item will be picked up, rolling over
+	// to the start of the buffer if cuttently at the end of the buffer
+	con_idx = (con_idx + 1) % SIZE;
+	count--;
+	return value;
+}
+
+// function that the consumer thread will run. get an item from the buffer
+// if the buffer is not empty. if the buffer is empty then wait until there
+// is data in the buffer.
+void *consumer(void* args) {
+	int value = 0;
+	while (value != END_MARKER) {
+		pthread_mutex_lock(&mutex);
+		while (count == 0) {
+			pthread_cond_wait(&full, &mutex);
+		}
+		value = get_item();
+		pthread_cond_signal(&empty);
+		pthread_mutex_unlock(&mutex);
+		printf("CONS %d\n", value);
+	}
+	return NULL;
+}
+
 int main(int argc, char* argv[])
 {
+	// producer consumer using conditional variable
+	if (argc != 2) {
+		printf("usage: ./sandbox number of items\n");
+		exit(1);
+	}
+
+	srand(time(0));
+	num_items = atoi(argv[1]);
+	pthread_t p, c;
+
+	pthread_create(&p, NULL, producer, NULL);
+	sleep(5);
+	pthread_create(&c, NULL, consumer, NULL);
+	pthread_join(p, NULL);
+	pthread_join(c, NULL);
+	
+	
 	//conditional variables for shared resources using a buffer,
 	//and a producer and consumer
-	///*
+	/*
 	if (argc != 2) {
 		printf("usage: ./sandbox num_items\n");
 		printf("provide number of items for the program to use\n");
@@ -202,7 +315,7 @@ int main(int argc, char* argv[])
 	// wait for the threads to finish
 	assert(pthread_join(p,NULL) == 0);
 	assert(pthread_join(c,NULL) == 0);
-	//*/
+	*/
 	
 
 	// init mutual exclusion to prevent race conditions
