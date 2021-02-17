@@ -6,7 +6,7 @@
 #include <assert.h>
 #define NUM_THREADS 3
 #define COUNT_TO 10000000
-#define SIZE 5
+#define SIZE 15
 #define END_MARKER -1
 void *helloWorld(void *args) 
 {
@@ -277,10 +277,10 @@ void *consumer(void* args) {
 	return NULL;
 }
 */
-// Size of the buffer
-#define SIZE 15
 
-// Number of items that will be produced before the END_MARKER. Note that this number is smaller than the size of the buffer. This means that we can model the buffer as unbounded
+// Number of items that will be produced before the END_MARKER. 
+// Note that this number is smaller than the size of the buffer. 
+// This means that we can model the buffer as unbounded
 #define NUM_ITEMS 12
 
 // Special marker used to indicate end of the producer data
