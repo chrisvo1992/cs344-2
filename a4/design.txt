@@ -2,26 +2,110 @@
 
 
 
-create a buffer for 80 characters
-create a buffer for the plus signs.
+create a buffer_1 for the 80 characters read
+create a buffer_2 for the conversion of line sep to space 
+create a buffer_3 for the conversion of ++ to ^ 
+
+threads:
+	1. read_input_t, reads from stdin, replacing all line separators by a space.
+	2. space_replace_t, replaces all line separators by a space.
+	3. plus_plus_t, replaces every pair of ++ with ^.
+	4. output_t, write line(s) of 80 characters plus the remaining < 80
+		when a termination symbol is encountered, followed by a line
+		separator.
+
+definitions:
+	line separator = '\n'
+	termination symbol = STOP, with spaces at beg and end, all upper case
+	allowed chars = ascii values [32,126]
+	80 char line = 80 chars + line separator
+
+requirements:
+	- no character processing takes place after termination symbol.
+	- input will not contain any empty lines.
+	- an input line will not be longer than 1000 characters, including the 
+		line separator.
+	- the input for the program will never have more than 49 lines before
+		the termination symbol
+	- program does not need to do any input checking
+	- program will not wait until reaching term symbol to print output.
+		when 80 chars have been read, print them.
 
 
-1 while the buffer is not full, get the input
+
+while (term_sym is false) {
+
+	->	read chars from stdin.
+		
+	->	send each char to a char array of size 6.
+
+	->	if the char count in the char array is 6 {
+				
+				->	check if the char array is 
+						['\n','S','T','O','P','\n'] or [' ','S','T','O','P',' '] {
+
+				->	if it is then stop sending chars to buffer_1 
+						and set the term_sym to true
+
+			} else {
+				
+					->	send the 6 chars to buffer_1 and clear the char array
+
+					->	increment buffer_1 count by 6
+			}
+
+	->	while buffer_1 count is not 0 {
+					
+				->	check each char in buffer_1 
+		
+				->	if the char is '\n', replace it with ' '.
+
+				->	send the char to buffer_2 
+
+				->	decrement buffer_1 count by 1
+			}
+
+	->	while buffer_2 count is not 0 {
 	
-	place input in the buffer
-	increment the count by 1 for each
-	character read
+				-> 	check each char in buffer_2
 
-2 if a sequence of characters matches STOP, check
-the surrounding characters for other characters
+				->	if the char is + {
 
-	if there are an even number of + symbols that are
-	sequential, convert them to a carrot symbol and 
-	send to the buffer
+							->	increment plus_counter
+
+							->	if plus_counter is 2 {
+		
+										-> 	replace the most recently read char
+												with ^											
+		
+										->	set plus_counter to 0
+
+									}	else {
+									
+										->	set the counter to 0
+
+										-> 	send the char to buffer_3	
+
+										->	increment buffer_3 count by 1	
+			
+										->	if buffer_3 count is 80 {
+												
+													->	print the contents of buffer_3 to stdout
+
+													->	set buffer_3 count to 0
+												}
+									}
+						}	
+			}
+}
 
 
-3 if there are no surrounding characters, stop
-processing stdin.
 
-4 send what is in the buffer to stdout
-	
+
+
+
+
+
+
+
+
