@@ -2,7 +2,7 @@
 
 
 
-create a buffer_1 for the 80 characters read
+create a buffer_1 for the characters read
 create a buffer_2 for the conversion of line sep to space 
 create a buffer_3 for the conversion of ++ to ^ 
 
@@ -37,33 +37,38 @@ while (term_sym is false) {
 
 	->	read chars from stdin.
 		
-	->	send each char to a char array of size 6.
+	->	send each char to buffer1.
 
-	->	if the char count in the char array is 6 {
-				
-				->	check if the char array is 
-						['\n','S','T','O','P','\n'] or [' ','S','T','O','P',' '] {
-
-				->	if it is then stop sending chars to buffer_1 
-						and set the term_sym to true
-
-			} else {
-				
-					->	send the 6 chars to buffer_1 and clear the char array
-
-					->	increment buffer_1 count by 6
-			}
+	-> 	increment buffer_1 count
 
 	->	while buffer_1 count is not 0 {
 					
 				->	check each char in buffer_1 
 		
 				->	if the char is '\n', replace it with ' '.
+////////////	
+				->	begin checking for the term sym:
 
-				->	send the char to buffer_2 
+						create a counter that increments up to 6
+						if the compared character matches what is 
+						in the term sym string index.
 
-				->	decrement buffer_1 count by 1
+				->	if the counter is 5 and the next char is a ' ' { 
+
+							stop sending chars to buffer_1
+
+							set the term_sym to true
+////////////////////
+						} else { 
+
+								send the character to buffer_2
+			
+								increment buffer_2 count
+
+								decrement buffer_1 count
+						}
 			}
+
 
 	->	while buffer_2 count is not 0 {
 	
@@ -74,25 +79,28 @@ while (term_sym is false) {
 							->	increment plus_counter
 
 							->	if plus_counter is 2 {
-		
-										-> 	replace the most recently read char
-												with ^											
-		
-										->	set plus_counter to 0
+	
+										set the char to send to ^	
+										
+										set plus_counter to 0
+
+										send that char to buffer_3
+				
+										increment buffer_3 count
 
 									}	else {
 									
-										->	set the counter to 0
+										set the plus_counter to 0
 
-										-> 	send the char to buffer_3	
+										send the char to buffer_3	
 
-										->	increment buffer_3 count by 1	
+										increment buffer_3 count 
 			
 										->	if buffer_3 count is 80 {
 												
-													->	print the contents of buffer_3 to stdout
+													print the contents of buffer_3 to stdout
 
-													->	set buffer_3 count to 0
+													decrement buffer_3 count on each char output
 												}
 									}
 						}	
