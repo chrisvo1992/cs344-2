@@ -28,8 +28,7 @@ int cons3_idx = 0;
 
 // a segment to check for the stopping condition 
 int stop_counter = 0;
-char stop[6];
-char check_stop[6] = {' ','S','T','O','P',' '};
+char stop[5] = "";
 
 // if true, stops reading from stdin
 int term_sym = 0;
@@ -82,19 +81,28 @@ void fill_buf3(char val) {
 	pthread_mutex_unlock(&mutex);
 }
 
+void output() {
+	int i = 0;
+	while (buf3_count >= 0) {
+		if ((i % 5) == 0) { printf("\n"); }
+		printf("%c", buffer_3[i]);
+		i++;
+		buf3_count--;
+	}
+}
+
 void plus_plus() {
 	int flag = 0;
-	printf("%d, %d\n", buf2_count, prod2_idx);
+	//printf("%d, %d\n", buf2_count, prod2_idx);
 
 	prod2_idx -= 2;
 	while (buf2_count >= 0) {
-		printf("%c. \n", buffer_2[prod2_idx]);
+		//printf("%c. \n", buffer_2[prod2_idx]);
 
 		if (buffer_2[prod2_idx] == '+' && buffer_2[prod2_idx - 1] == '+') {
 			flag = 1;
 		}
 
-		//prod2_idx -= 1;
 		buf2_count -= 1;
 
 		if (flag) {
@@ -156,9 +164,16 @@ void space_replace() {
 	//*/
 }
 
+void reset(char* str) {
+	for (int i = 0; i < 6; ++i) {
+		str[i] = ' ';
+	}
+}
+
 // consumes input and passes it to buffer_1
 void* read_input(void* args) {
 	char ch;
+	int i = 0;
 
 	/*
 	int std_out = dup(1); 
@@ -172,15 +187,30 @@ void* read_input(void* args) {
 		fill_buf1(ch);
 	}
 	*/
-	int i = 0;
-	while (i < 11) {
+
+	while (i < 25) {
 		ch = get_char();
+		if (ch=='\n'||ch=='S'||ch=='T'||ch=='O'||ch=='P'){
+			stop[stop_counter] = ch;
+			stop_counter++;
+		} else {
+			reset(stop);
+			stop_counter = 0;	
+		}
+		if (stop_counter == 5) {
+			if (strcmp(stop, "STOP\n") == 0) {
+				printf("found %s.\n", stop);
+				reset(stop);
+				stop_counter = 0;
+			} 
+		}
 		fill_buf1(ch);
 		i++;
 	}
 
 	space_replace();
 	plus_plus();
+	output();
 
 	return NULL;
 }
