@@ -28,7 +28,8 @@ int cons3_idx = 0;
 
 // a segment to check for the stopping condition 
 int stop_counter = 0;
-char stop[5] = "";
+//char stop[] = "STOP";
+char stop[5] = {'S','T','O','P','\0'};
 
 // if true, stops reading from stdin
 int term_sym = 0;
@@ -52,11 +53,13 @@ char get_char() {
 }
 
 // fills buffer_1 
-void fill_buf1(char val) {
+void fill_buf1(char* val) {
 	pthread_mutex_lock(&mutex);
-	buffer_1[prod1_idx] = val;
-	buf1_count++;	
-	prod1_idx++;
+	for (int i = 0; i < strlen(val); ++i) {
+		buffer_1[prod1_idx] = val[i];
+		buf1_count++;	
+		prod1_idx++;
+	}
 	pthread_cond_signal(&full);
 	pthread_mutex_unlock(&mutex);
 }
@@ -118,99 +121,36 @@ void plus_plus() {
 
 // turn into thread 2
 void space_replace() {
-	///*
 	while (buf1_count >= 0) {
-		//printf("prod1_idx: %d, buffer_1{%d): %c\n", prod1_idx, prod1_idx, buffer_1[prod1_idx]);
-
+		//printf("%c",buffer_1[prod1_idx - 1]);
 		if (buffer_1[prod1_idx - 1] == '\n') {
 			buffer_1[prod1_idx - 1] = ' ';			
-			//stop[stop_counter] = buffer_1[prod1_idx];
-			//stop_counter++;
 		}
-
-		// doesnt work and is against dry
-		/*
-		if (buffer_1[prod1_idx] == 'S' && stop_counter == 1 ) {
-			stop[stop_counter] = 'S';
-			stop_counter++;	
-		}
-		if (buffer_1[prod1_idx] == 'T' && stop_counter == 2 ) {
-			stop[stop_counter] = 'T';
-			stop_counter++;	
-		}
-		if (buffer_1[prod1_idx] == 'O' && stop_counter == 3 ) {
-			stop[stop_counter] = 'O';
-			stop_counter++;	
-		}
-		if (buffer_1[prod1_idx] == 'P' && stop_counter == 4 ) {
-			stop[stop_counter] = 'P';
-			stop_counter++;	
-		}
-		if (stop_counter == 6) {
-			for (int i = 0; i < stop_counter; i++) {
-				if (check_stop[i] != stop[i]) {
-					stop_counter = 0;
-				}
-			}	
-			if (stop_counter == 6) { term_sym = 1; break; }
-		}
-		*/
-
 		fill_buf2(buffer_1[prod1_idx - 1]);
 		prod1_idx = prod1_idx - 1;
 		buf1_count = buf1_count - 1;
-	}
-	//if (term_sym) { printf("found stop condition\n"); }	
-	//*/
-}
-
-void reset(char* str) {
-	for (int i = 0; i < 6; ++i) {
-		str[i] = ' ';
 	}
 }
 
 // consumes input and passes it to buffer_1
 void* read_input(void* args) {
-	char ch;
-	int i = 0;
+	size_t size;
+	char* line = (char*)calloc(SIZE, sizeof(char));
 
-	/*
-	int std_out = dup(1); 
-	int fd = open("/dev/null", O_RDWR | O_TRUNC);
-	dup2(fd, std_out);
-	*/
-
-	/*
-	for (int i = 0; i < 10; i++) {
-		ch = get_char();
-		fill_buf1(ch);
-	}
-	*/
-
-	while (i < 25) {
-		ch = get_char();
-		if (ch=='\n'||ch=='S'||ch=='T'||ch=='O'||ch=='P'){
-			stop[stop_counter] = ch;
-			stop_counter++;
+	while (term_sym == 0) {
+		getline(&line, &size, stdin);
+		if (strncmp(line, "STOP\n", 5) == 0) {
+			term_sym = 1;
+			//return NULL;	
 		} else {
-			reset(stop);
-			stop_counter = 0;	
-		}
-		if (stop_counter == 5) {
-			if (strcmp(stop, "STOP\n") == 0) {
-				printf("found %s.\n", stop);
-				reset(stop);
-				stop_counter = 0;
-			} 
-		}
-		fill_buf1(ch);
-		i++;
+			fill_buf1(line);	
+		}	
 	}
 
 	space_replace();
 	plus_plus();
 	output();
+
 
 	return NULL;
 }
@@ -224,7 +164,10 @@ int main(int argc, char* argv[]) {
 
 	pthread_join(input_t, NULL);
 
-	printf("buffer 1: %s .\n", buffer_1);
+	printf("buffer 1\n");
+	for (int i = 0; i < strlen(buffer_1); ++i) {
+		printf("%c", buffer_1[i]);
+	}
 	printf("buffer 2: %s .\n", buffer_2);
 	printf("buffer 3: %s .\n", buffer_3);
 
