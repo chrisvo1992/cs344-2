@@ -68,17 +68,18 @@ void fill_buf2(char val) {
 	pthread_mutex_lock(&mutex2);
 	buffer_2[prod2_idx] = val;
 	buf2_count++;	
-	prod2_idx++;
+	prod2_idx = prod2_idx + 1;
 	pthread_cond_signal(&full2);
 	pthread_mutex_unlock(&mutex2);
 }
 
 // fills buffer_3
 void fill_buf3(char val) {
+	printf("%c", val);
 	pthread_mutex_lock(&mutex3);
 	buffer_3[prod3_idx] = val;
 	buf3_count++;	
-	prod3_idx++;
+	prod3_idx = prod3_idx + 1;
 	pthread_cond_signal(&full3);
 	pthread_mutex_unlock(&mutex3);
 }
@@ -95,29 +96,39 @@ void* output(void* args) {
 	return NULL;
 }
 
+char get_buf2() {
+	pthread_mutex_lock(&mutex2);
+	while (buf2_count == 0) {
+		pthread_cond_wait(&full2, &mutex2);
+	}	
+	char ch = buffer_2[cons2_idx];
+	cons2_idx = cons2_idx + 1;
+	buf2_count--;
+	pthread_mutex_unlock(&mutex2);
+	return ch;
+}
 
 void* plus_plus(void* args) {
 //void plus_plus() {
 	int flag = 0;
-	//printf("%d, %d\n", buf2_count, prod2_idx);
+	char ch1;
+	char ch2;
+	char ch3;
 
-	prod2_idx -= 2;
-	while (buf2_count >= 0) {
-		//printf("%c. \n", buffer_2[prod2_idx]);
-
-		if (buffer_2[prod2_idx] == '+' && buffer_2[prod2_idx - 1] == '+') {
-			flag = 1;
-		}
-
-		buf2_count -= 1;
-
-		if (flag) {
-			fill_buf3('^');
-			prod2_idx -= 2;
-			flag = 0;
+	for (int i = 0; i < SIZE; ++i) {
+		ch1 = get_buf2();
+		if (ch1 == '+') {
+			ch2 = get_buf2();
+			if (ch2 == '+') {
+				printf("found what we looking for\n");
+				ch3 = '^';
+				fill_buf3(ch3);
+			}	else {
+				fill_buf3(ch1);
+				fill_buf3(ch2);
+			}
 		} else {
-			fill_buf3(buffer_2[prod2_idx]);
-			prod2_idx--;
+			fill_buf3(ch1);
 		}
 	}
 	return NULL;
@@ -146,23 +157,19 @@ char get_buf1() {
 // get_buf1 function
 void* space_replace(void* args) {
 //void space_replace() {
-	while (buf1_count > 0) {
-		//printf("isr: %c",buffer_1[prod1_idx - 1]);
-		if (buffer_1[prod1_idx - 1] == '\n') {
-			buffer_1[prod1_idx - 1] = ' ';			
-		}
-		fill_buf2(buffer_1[prod1_idx - 1]);
-		//printf("buf1_count: %i\n", buf1_count);
-		prod1_idx = prod1_idx - 1;
-		buf1_count = buf1_count - 1;
+	char ch;	
+	for (int i = 0; i < SIZE; ++i) {
+		ch = get_buf1();
+		if (ch == '\n') {
+			ch = ' '; 
+		}	
+		fill_buf2(ch);	
 	}
 	return NULL;
 }
 
 // consumes input and passes it to buffer_1
 void* read_input(void* args) {
-	//char ch;
-	//int i = 0;
 	size_t size;
 	char** line = calloc(SIZE, sizeof(char));
 	char* str = NULL;
@@ -172,22 +179,14 @@ void* read_input(void* args) {
 		if (strncmp(*line, "STOP\n",5) == 0) {
 			term_sym = 1;
 		} else {
-			//printf("%s %ld",*line, strlen(*line));
 			str = calloc(strlen(*line), sizeof(char));
 			strcpy(str, *line);
 			for (int i = 0; i < strlen(*line); i++) {
 				fill_buf1(str[i]);	
-				//printf("%c", str[i]);
 			}
 			free(str);
 		}
 	}
-
-	/*
-	space_replace();
-	plus_plus();
-	output();
-	*/
 
 	return NULL;
 }
@@ -203,9 +202,6 @@ int main(int argc, char* argv[]) {
 	//*/	
 
 	pthread_create(&input_t, NULL, read_input, NULL);
-	//pthread_join(input_t, NULL);
-
-	///*
 	pthread_create(&replace_t, NULL, space_replace, NULL);
 	pthread_create(&plus_t, NULL, plus_plus, NULL);
 	pthread_create(&output_t, NULL, output, NULL);
@@ -214,7 +210,6 @@ int main(int argc, char* argv[]) {
 	pthread_join(replace_t, NULL);
 	pthread_join(plus_t, NULL);
 	pthread_join(output_t, NULL);
-	//*/
 	
 	/*
 	printf("buffer 1\n");
@@ -227,13 +222,15 @@ int main(int argc, char* argv[]) {
 	for (int i = 0; i < strlen(buffer_2); ++i) {
 		printf("%c", buffer_2[i]);
 	}
+	*/
+	/*
 	printf("buffer 3\n");
 	for (int i = 0; i < strlen(buffer_3); ++i) {
 		printf("%c", buffer_3[i]);
 	}
 	*/
 
-	printf("buffer 3: %s %ld\n", buffer_3, strlen(buffer_3));
+	//printf("buffer 3: %s %ld\n", buffer_3, strlen(buffer_3));
 
 	return EXIT_SUCCESS;
 }
