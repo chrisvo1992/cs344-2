@@ -25,12 +25,6 @@ int cons2_idx = 0;
 int prod3_idx = 0;
 int cons3_idx = 0;
 
-
-// a segment to check for the stopping condition 
-int stop_counter = 0;
-//char stop[] = "STOP";
-char stop[5] = {'S','T','O','P','\0'};
-
 // if true, stops reading from stdin
 int term_sym = 0;
 
@@ -61,9 +55,10 @@ char get_char() {
 // fills buffer_1 
 void fill_buf1(char val) {
 	pthread_mutex_lock(&mutex1);
+	prod1_idx++;
 	buffer_1[prod1_idx] = val;
 	buf1_count++;	
-	prod1_idx++;
+	//printf("%i\n", buf1_count);
 	pthread_cond_signal(&full1);
 	pthread_mutex_unlock(&mutex1);
 }
@@ -89,17 +84,20 @@ void fill_buf3(char val) {
 }
 
 void* output(void* args) {
+//void output() {
 	int i = 0;
 	while (buf3_count >= 0) {
 		if ((i % 5) == 0) { printf("\n"); }
-		printf("%c", buffer_3[i]);
+		//printf("%c", buffer_3[i]);
 		i++;
 		buf3_count--;
 	}
 	return NULL;
 }
 
+
 void* plus_plus(void* args) {
+//void plus_plus() {
 	int flag = 0;
 	//printf("%d, %d\n", buf2_count, prod2_idx);
 
@@ -125,35 +123,71 @@ void* plus_plus(void* args) {
 	return NULL;
 }
 
-// turn into thread 2
+// get the next item from buffer 1
+// if the buffer is empty, a wait condition
+// is placed on the thread.
+// else it consumes the data in buffer_1
+// returns the character at the cons1_idx of the 
+// buffer
+char get_buf1() {
+	pthread_mutex_lock(&mutex1);
+	while (buf1_count == 0) {
+		pthread_cond_wait(&full1, &mutex1);
+	}
+	char ch = buffer_1[cons1_idx];
+	cons1_idx++;
+	buf1_count--;
+	pthread_mutex_unlock(&mutex1);
+	return ch;
+}
+
+// replaces all occurences of the newline character with 
+// space. retrieves the character values with the
+// get_buf1 function
 void* space_replace(void* args) {
-	while (buf1_count >= 0) {
-		printf("%c",buffer_1[prod1_idx - 1]);
+//void space_replace() {
+	while (buf1_count > 0) {
+		//printf("isr: %c",buffer_1[prod1_idx - 1]);
 		if (buffer_1[prod1_idx - 1] == '\n') {
 			buffer_1[prod1_idx - 1] = ' ';			
 		}
 		fill_buf2(buffer_1[prod1_idx - 1]);
+		//printf("buf1_count: %i\n", buf1_count);
 		prod1_idx = prod1_idx - 1;
 		buf1_count = buf1_count - 1;
 	}
-	
 	return NULL;
 }
 
 // consumes input and passes it to buffer_1
 void* read_input(void* args) {
-	char ch;
-	int i = 0;
-
-	while (i < 10) {
-		ch = get_char();
-		fill_buf1(ch);	
-		i++;
+	//char ch;
+	//int i = 0;
+	size_t size;
+	char** line = calloc(SIZE, sizeof(char));
+	char* str = NULL;
+	
+	while (term_sym == 0) {
+		getline(line, &size, stdin);
+		if (strncmp(*line, "STOP\n",5) == 0) {
+			term_sym = 1;
+		} else {
+			//printf("%s %ld",*line, strlen(*line));
+			str = calloc(strlen(*line), sizeof(char));
+			strcpy(str, *line);
+			for (int i = 0; i < strlen(*line); i++) {
+				fill_buf1(str[i]);	
+				//printf("%c", str[i]);
+			}
+			free(str);
+		}
 	}
 
-	//space_replace();
-	//plus_plus();
-	//output();
+	/*
+	space_replace();
+	plus_plus();
+	output();
+	*/
 
 	return NULL;
 }
@@ -162,14 +196,16 @@ int main(int argc, char* argv[]) {
 	
 	srand(time(0));
 	pthread_t input_t; 
+	///*
 	pthread_t replace_t;
 	pthread_t plus_t;
 	pthread_t output_t;
-	
-	pthread_create(&input_t, NULL, read_input, NULL);
-	pthread_join(input_t, NULL);
+	//*/	
 
-	/*
+	pthread_create(&input_t, NULL, read_input, NULL);
+	//pthread_join(input_t, NULL);
+
+	///*
 	pthread_create(&replace_t, NULL, space_replace, NULL);
 	pthread_create(&plus_t, NULL, plus_plus, NULL);
 	pthread_create(&output_t, NULL, output, NULL);
@@ -178,16 +214,26 @@ int main(int argc, char* argv[]) {
 	pthread_join(replace_t, NULL);
 	pthread_join(plus_t, NULL);
 	pthread_join(output_t, NULL);
-	*/
+	//*/
 	
-	///*
+	/*
 	printf("buffer 1\n");
 	for (int i = 0; i < strlen(buffer_1); ++i) {
 		printf("%c", buffer_1[i]);
 	}
-	//printf("buffer 2: %s .\n", buffer_2);
-	//printf("buffer 3: %s .\n", buffer_3);
-	//*/
+	*/
+	/*
+	printf("buffer 2\n");
+	for (int i = 0; i < strlen(buffer_2); ++i) {
+		printf("%c", buffer_2[i]);
+	}
+	printf("buffer 3\n");
+	for (int i = 0; i < strlen(buffer_3); ++i) {
+		printf("%c", buffer_3[i]);
+	}
+	*/
+
+	printf("buffer 3: %s %ld\n", buffer_3, strlen(buffer_3));
 
 	return EXIT_SUCCESS;
 }

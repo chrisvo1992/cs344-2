@@ -46,19 +46,15 @@ while (term_sym is false) {
 				->	check each char in buffer_1 
 		
 				->	if the char is '\n', replace it with ' '.
-////////////	
+
 				->	begin checking for the term sym:
 
-						create a counter that increments up to 6
-						if the compared character matches what is 
-						in the term sym string index.
-
-				->	if the counter is 5 and the next char is a ' ' { 
+				->	if the input line contain only the stopping condition { 
 
 							stop sending chars to buffer_1
 
 							set the term_sym to true
-////////////////////
+
 						} else { 
 
 								send the character to buffer_2
