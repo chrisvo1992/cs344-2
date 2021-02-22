@@ -115,8 +115,8 @@ char get_buf2() {
 void fill_buf3(char val) {
 	pthread_mutex_lock(&mutex3);
 	buffer_3[prod3_idx] = val;
-	printf("@%c", buffer_3[prod3_idx]);
-	fflush(stdout);
+	//printf("@%c", buffer_3[prod3_idx]);
+	//fflush(stdout);
 	buf3_count = buf3_count + 1;	
 	prod3_idx = prod3_idx + 1;
 	pthread_cond_signal(&full3);
@@ -124,29 +124,42 @@ void fill_buf3(char val) {
 }
 
 char get_buf3() {
+	//pthread_mutex_lock(&mutex3);
+	/*
 	pthread_mutex_lock(&mutex3);
 	while (buf3_count == 0) {
 		pthread_cond_wait(&full3, &mutex3);
 	}
+	*/
 	char ch = buffer_3[cons3_idx];
+	//printf("@%c", ch);
+	//fflush(stdout);
 	cons3_idx = cons3_idx + 1;
 	buf3_count--;
-	pthread_mutex_unlock(&mutex3);
+	//pthread_mutex_unlock(&mutex3);
 	return ch;
 }
 
 void* output(void* args) {
 //void output() {
+	char str[COUNT] = "";
+	int i = 0;
 
-	//for (int i = 0; i < buf3_count; i++) {
-	/*
-	while (buf3_count > 0) {
-		printf("%c", get_buf3());
-		fflush(stdout);
+	while (buf2_count == 0) {
+		pthread_cond_wait(&full3, &mutex3);
 	}
-	*/
-	//printf("\n");
-	//fflush(stdout);
+
+	pthread_mutex_lock(&mutex3);	
+
+	while (buf3_count > 0) {
+		str[i] = get_buf3();
+		printf("#%c %i", str[i], buf3_count);
+		fflush(stdout);
+		i++;
+	}
+
+	pthread_mutex_unlock(&mutex3);
+
 	return NULL;
 }
 
@@ -210,7 +223,9 @@ void* read_input(void* args) {
 
 	for (int i = 0; i < LINE_CNT; i++) {
 		getline(line, &size, stdin);
+
 		pthread_mutex_lock(&mutex1);
+
 		if (strncmp(*line, "STOP\n\0",6) == 0) {
 			term_sym = 1;
 		} else {
@@ -218,11 +233,12 @@ void* read_input(void* args) {
 			strcpy(str, *line);
 			for (int j = 0; j < strlen(*line); j++) {
 				fill_buf1(str[j]);	
-				//printf("buffer_1 count: %i\n", buf1_count);
 			}
+
+			free(str);
+
 			pthread_cond_signal(&full1);
 			pthread_mutex_unlock(&mutex1);
-			free(str);
 		}
 	}
 
