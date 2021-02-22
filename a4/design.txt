@@ -72,23 +72,19 @@ while (term_sym is false) {
 
 				->	if the char is + {
 
-							->	increment plus_counter
+							-> 	read the next char	
 
-							->	if plus_counter is 2 {
+							->	if it is another + {
 	
 										set the char to send to ^	
 										
-										set plus_counter to 0
-
 										send that char to buffer_3
 				
 										increment buffer_3 count
 
 									}	else {
 									
-										set the plus_counter to 0
-
-										send the char to buffer_3	
+										send both of the charsto buffer_3	
 
 										increment buffer_3 count 
 			
@@ -98,6 +94,8 @@ while (term_sym is false) {
 
 													decrement buffer_3 count on each char output
 												}
+									} else {
+											send the char to buffer 3
 									}
 						}	
 			}
