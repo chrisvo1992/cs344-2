@@ -59,34 +59,12 @@ char get_char() {
 void fill_buf1(char val) {
 	//pthread_mutex_lock(&mutex1);
 	buffer_1[prod1_idx] = val;
-	printf("%c", buffer_1[prod1_idx]);
+	//printf("%c", buffer_1[prod1_idx]);
 	prod1_idx = prod1_idx + 1;
 	buf1_count = buf1_count + 1;	
 	// unblocks threads blocked on a condition variable
 	//pthread_cond_signal(&full1);
 	//pthread_mutex_unlock(&mutex1);
-}
-
-// fills buffer_2
-void fill_buf2(char val) {
-	//printf("b2: %c\n",val);
-	//pthread_mutex_lock(&mutex2);
-	buffer_2[prod2_idx] = val;
-	buf2_count = buf2_count + 1;	
-	prod2_idx = prod2_idx + 1;
-	//pthread_cond_signal(&full2);
-	//pthread_mutex_unlock(&mutex2);
-}
-
-// fills buffer_3
-void fill_buf3(char val) {
-	//printf("b3\n%c\n", val);
-	pthread_mutex_lock(&mutex3);
-	buffer_3[prod3_idx] = val;
-	buf3_count = buf3_count + 1;	
-	prod3_idx = prod3_idx + 1;
-	pthread_cond_signal(&full3);
-	pthread_mutex_unlock(&mutex3);
 }
 
 // get the next item from buffer 1
@@ -103,23 +81,46 @@ char get_buf1() {
 		//pthread_cond_wait(&full1, &mutex1);
 	//}
 	ch = buffer_1[cons1_idx];
-	buffer_1[cons1_idx] = '\0';
+	//buffer_1[cons1_idx] = '\0';
 	cons1_idx = cons1_idx + 1;
 	buf1_count = buf1_count - 1;
 	//pthread_mutex_unlock(&mutex1);
 	return ch;
 }
 
+// fills buffer_2
+void fill_buf2(char val) {
+	//printf("b2: %c\n",val);
+	//pthread_mutex_lock(&mutex2);
+	buffer_2[prod2_idx] = val;
+	buf2_count = buf2_count + 1;	
+	prod2_idx = prod2_idx + 1;
+	//pthread_cond_signal(&full2);
+	//pthread_mutex_unlock(&mutex2);
+}
+
 char get_buf2() {
-	pthread_mutex_lock(&mutex2);
-	while (buf2_count == 0) {
-		pthread_cond_wait(&full2, &mutex2);
-	}	
+	//pthread_mutex_lock(&mutex2);
+	//while (buf2_count == 0) {
+		//pthread_cond_wait(&full2, &mutex2);
+	//}	
 	char ch = buffer_2[cons2_idx];
 	cons2_idx = cons2_idx + 1;
 	buf2_count--;
-	pthread_mutex_unlock(&mutex2);
+	//pthread_mutex_unlock(&mutex2);
 	return ch;
+}
+
+// fills buffer_3
+void fill_buf3(char val) {
+	pthread_mutex_lock(&mutex3);
+	buffer_3[prod3_idx] = val;
+	printf("@%c", buffer_3[prod3_idx]);
+	fflush(stdout);
+	buf3_count = buf3_count + 1;	
+	prod3_idx = prod3_idx + 1;
+	pthread_cond_signal(&full3);
+	pthread_mutex_unlock(&mutex3);
 }
 
 char get_buf3() {
@@ -136,18 +137,16 @@ char get_buf3() {
 
 void* output(void* args) {
 //void output() {
-	pthread_mutex_lock(&mutex3);
 
-	while (buf3_count != 80) {
-		pthread_cond_wait(&full3, &mutex3);
-	}
-	for (int i = 0; i < buf3_count; i++) {
+	//for (int i = 0; i < buf3_count; i++) {
+	/*
+	while (buf3_count > 0) {
 		printf("%c", get_buf3());
 		fflush(stdout);
 	}
-	printf("\n");
-	fflush(stdout);
-	pthread_mutex_unlock(&mutex3);
+	*/
+	//printf("\n");
+	//fflush(stdout);
 	return NULL;
 }
 
@@ -156,8 +155,8 @@ void* plus_plus(void* args) {
 	char ch1;
 	char ch2;
 	char ch3;
-
-	for (int i = 0; i < buf2_count; ++i) {
+	//for (int i = 0; i < buf2_count; i++) {
+	while (buf2_count > 0) {
 		ch1 = get_buf2();
 		if (ch1 == '+') {
 			ch2 = get_buf2();
@@ -196,11 +195,9 @@ void* space_replace(void* args) {
 		}
 		fill_buf2(ch);	
 	}
-	printf("b%s", buffer_1);
-	printf("::%s", buffer_2);
+
 	pthread_cond_signal(&full2);
 	pthread_mutex_unlock(&mutex2);
-	
 
 	return NULL;
 }
@@ -211,24 +208,20 @@ void* read_input(void* args) {
 	char** line = calloc(LINE_LEN, sizeof(char));
 	char* str = NULL;
 
-	for (int i = 0; i < LINE_CNT; ++i) {
+	for (int i = 0; i < LINE_CNT; i++) {
 		getline(line, &size, stdin);
-
 		pthread_mutex_lock(&mutex1);
-
-		if (strncmp(*line, "STOP\n",5) == 0) {
+		if (strncmp(*line, "STOP\n\0",6) == 0) {
 			term_sym = 1;
 		} else {
 			str = calloc(strlen(*line), sizeof(char));
 			strcpy(str, *line);
-			for (int i = 0; i < strlen(*line); i++) {
-				fill_buf1(str[i]);	
+			for (int j = 0; j < strlen(*line); j++) {
+				fill_buf1(str[j]);	
 				//printf("buffer_1 count: %i\n", buf1_count);
 			}
-
 			pthread_cond_signal(&full1);
 			pthread_mutex_unlock(&mutex1);
-
 			free(str);
 		}
 	}
@@ -279,6 +272,8 @@ int main(int argc, char* argv[]) {
 	}
 	*/
 
+	printf("buffer 1: %s %ld\n", buffer_1, strlen(buffer_1));
+	printf("buffer 2: %s %ld\n", buffer_2, strlen(buffer_2));
 	printf("buffer 3: %s %ld\n", buffer_3, strlen(buffer_3));
 
 	return EXIT_SUCCESS;
