@@ -57,24 +57,25 @@ char get_char() {
 
 // fills buffer_1 
 void fill_buf1(char val) {
-	pthread_mutex_lock(&mutex1);
+	//pthread_mutex_lock(&mutex1);
 	buffer_1[prod1_idx] = val;
+	printf("%c", buffer_1[prod1_idx]);
 	prod1_idx = prod1_idx + 1;
 	buf1_count = buf1_count + 1;	
 	// unblocks threads blocked on a condition variable
-	pthread_cond_signal(&full1);
-	pthread_mutex_unlock(&mutex1);
+	//pthread_cond_signal(&full1);
+	//pthread_mutex_unlock(&mutex1);
 }
 
 // fills buffer_2
 void fill_buf2(char val) {
 	//printf("b2: %c\n",val);
-	pthread_mutex_lock(&mutex2);
+	//pthread_mutex_lock(&mutex2);
 	buffer_2[prod2_idx] = val;
 	buf2_count = buf2_count + 1;	
 	prod2_idx = prod2_idx + 1;
-	pthread_cond_signal(&full2);
-	pthread_mutex_unlock(&mutex2);
+	//pthread_cond_signal(&full2);
+	//pthread_mutex_unlock(&mutex2);
 }
 
 // fills buffer_3
@@ -96,15 +97,16 @@ void fill_buf3(char val) {
 // buffer
 char get_buf1() {
 	char ch;
-	pthread_mutex_lock(&mutex1);
+	//pthread_mutex_lock(&mutex1);
 	//printf("checking buf1\n");
-	while (buf1_count == 0) {
-		pthread_cond_wait(&full1, &mutex1);
-	}
+	//while (buf1_count == 0) {
+		//pthread_cond_wait(&full1, &mutex1);
+	//}
 	ch = buffer_1[cons1_idx];
+	buffer_1[cons1_idx] = '\0';
 	cons1_idx = cons1_idx + 1;
 	buf1_count = buf1_count - 1;
-	pthread_mutex_unlock(&mutex1);
+	//pthread_mutex_unlock(&mutex1);
 	return ch;
 }
 
@@ -134,18 +136,19 @@ char get_buf3() {
 
 void* output(void* args) {
 //void output() {
-	
-	if ((buf3_count % 10) == 0) {
-		for (int i = 0; i <	buf3_count; ++i) {
-			printf("%c", buffer_3[i]);		
-			fflush(stdout);
-		}
-		printf("\n");
+	pthread_mutex_lock(&mutex3);
+
+	while (buf3_count != 80) {
+		pthread_cond_wait(&full3, &mutex3);
+	}
+	for (int i = 0; i < buf3_count; i++) {
+		printf("%c", get_buf3());
 		fflush(stdout);
 	}
-
+	printf("\n");
+	fflush(stdout);
+	pthread_mutex_unlock(&mutex3);
 	return NULL;
-	
 }
 
 void* plus_plus(void* args) {
@@ -172,21 +175,33 @@ void* plus_plus(void* args) {
 	return NULL;
 }
 
+// retrieving all values from buffer 1, therefore I need to 
+// place a lock on buffer
 // replaces all occurences of the newline character with 
 // space. retrieves the character values with the
 // get_buf1 function
 void* space_replace(void* args) {
 //void space_replace() {
 	char ch;	
-	pthread_mutex_unlock(&mutex1);
-	//printf("space replace consuming buffer_1, buf1 count: %i\n", buf1_count);
-	//for (int i = 0; i < buf1_count; ++i) {
-		ch = get_buf1();
+	
+	pthread_mutex_lock(&mutex2);
+
+	while (buf1_count == 0) {
+		pthread_cond_wait(&full1, &mutex1);
+	}
+	while (buf1_count > 0) {
+		ch = get_buf1();	
 		if (ch == '\n') {
 			ch = ' '; 
-		}	
+		}
 		fill_buf2(ch);	
-	//}
+	}
+	printf("b%s", buffer_1);
+	printf("::%s", buffer_2);
+	pthread_cond_signal(&full2);
+	pthread_mutex_unlock(&mutex2);
+	
+
 	return NULL;
 }
 
@@ -197,7 +212,10 @@ void* read_input(void* args) {
 	char* str = NULL;
 
 	for (int i = 0; i < LINE_CNT; ++i) {
-			getline(line, &size, stdin);
+		getline(line, &size, stdin);
+
+		pthread_mutex_lock(&mutex1);
+
 		if (strncmp(*line, "STOP\n",5) == 0) {
 			term_sym = 1;
 		} else {
@@ -207,6 +225,10 @@ void* read_input(void* args) {
 				fill_buf1(str[i]);	
 				//printf("buffer_1 count: %i\n", buf1_count);
 			}
+
+			pthread_cond_signal(&full1);
+			pthread_mutex_unlock(&mutex1);
+
 			free(str);
 		}
 	}
@@ -214,18 +236,23 @@ void* read_input(void* args) {
 	return NULL;
 }
 
+//void*func_ptr[4] = {read_input, space_replace, plus_plus, output};
+
 int main(int argc, char* argv[]) {
+
+	// create an array of threads
+	// then check the join condition
 	srand(time(0));
 	pthread_t input_t; 
 	pthread_t replace_t;
 	pthread_t plus_t;
 	pthread_t output_t;
-	
+
 	do {
-	pthread_create(&input_t, NULL, read_input, NULL);
-	pthread_create(&replace_t, NULL, space_replace, NULL);
-	pthread_create(&plus_t, NULL, plus_plus, NULL);
-	pthread_create(&output_t, NULL, output, NULL);
+		pthread_create(&input_t, NULL, read_input, NULL);
+		pthread_create(&replace_t, NULL, space_replace, NULL);
+		pthread_create(&plus_t, NULL, plus_plus, NULL);
+		pthread_create(&output_t, NULL, output, NULL);
 	} while (term_sym == 0);
 
 	pthread_join(input_t, NULL);
