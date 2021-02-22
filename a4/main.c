@@ -217,21 +217,30 @@ void* space_replace(void* args) {
 
 // consumes input and passes it to buffer_1
 void* read_input(void* args) {
-	size_t size;
-	char** line = calloc(LINE_LEN, sizeof(char));
+	//size_t size;
+	//char** line = calloc(LINE_LEN, sizeof(char));
+	char line[LINE_LEN] = "";
 	char* str = NULL;
 
-	for (int i = 0; i < LINE_CNT; i++) {
-		getline(line, &size, stdin);
+	do {
+	//for (int i = 0; i < LINE_CNT; i++) {
+		//getline(line, &size, stdin);
+		fgets(line, LINE_LEN, stdin);
+		printf(line);
 
 		pthread_mutex_lock(&mutex1);
-
-		if (strncmp(*line, "STOP\n\0",6) == 0) {
+	
+		if (strcmp(line, "STOP\n") == 0) {	
+		//if (strncmp(*line, "STOP\n\0",6) == 0) {
 			term_sym = 1;
+			break;
 		} else {
-			str = calloc(strlen(*line), sizeof(char));
-			strcpy(str, *line);
-			for (int j = 0; j < strlen(*line); j++) {
+			str = calloc(strlen(line), sizeof(char));
+			//str = calloc(strlen(*line), sizeof(char));
+			strcpy(str, line);
+			//strcpy(str, *line);
+			for (int j = 0; j < strlen(line); j++) {
+			//for (int j = 0; j < strlen(*line); j++) {
 				fill_buf1(str[j]);	
 			}
 
@@ -240,7 +249,8 @@ void* read_input(void* args) {
 			pthread_cond_signal(&full1);
 			pthread_mutex_unlock(&mutex1);
 		}
-	}
+	} while (term_sym == 0);
+	//}
 
 	return NULL;
 }
