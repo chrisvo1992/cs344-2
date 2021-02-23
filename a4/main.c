@@ -290,8 +290,8 @@ int main(int argc, char* argv[]) {
 	pthread_join(plus_t, NULL);
 	pthread_join(output_t, NULL);
 
-	close(fd1);
-	close(fd2);
+	//close(fd1);
+	//close(fd2);
 
 	return EXIT_SUCCESS;
 }
