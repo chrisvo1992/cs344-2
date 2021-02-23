@@ -99,14 +99,13 @@ void* output(void* args) {
 	int i = 0;
 
 	while (term_sym == 0) {
-
 		pthread_mutex_lock(&mutex3);	
-
 		///*
 		while (buf3_count == 0) {
 			pthread_cond_wait(&full3, &mutex3);
 		}
 		//*/
+		pthread_mutex_unlock(&mutex3);
 
 		while (buf3_count > 0) {
 			str[i] = get_buf3();
@@ -115,8 +114,6 @@ void* output(void* args) {
 			fflush(stdout);
 			i++;
 		}
-
-		pthread_mutex_unlock(&mutex3);
 	}
 	printf("closing output\n");
 	return NULL;
@@ -137,7 +134,6 @@ void* plus_plus(void* args) {
 			pthread_cond_wait(&full2, &mutex2);
 		}
 		//*/
-		
 		pthread_mutex_unlock(&mutex2);
 
 		pthread_mutex_lock(&mutex3);
@@ -177,14 +173,18 @@ void* space_replace(void* args) {
 	while (term_sym == 0) {
 		i = 0;
 		count = 0;
-		///*
-		pthread_mutex_lock(&mutex1);
 
+
+		pthread_mutex_lock(&mutex1);
+		///*
 		while (buf1_count == 0) {
 			pthread_cond_wait(&full1, &mutex1);
 		}
 		//*/
-	
+		pthread_mutex_unlock(&mutex1);
+		
+		pthread_mutex_lock(&mutex2);
+
 		while (buf1_count > 0) {
 			ch = get_buf1();	
 			if (ch == '\n') {
@@ -192,20 +192,21 @@ void* space_replace(void* args) {
 			}
 			str[i] = ch;	
 			count++;
-			//fill_buf2(ch);	
+			fill_buf2(ch);	
 		}
-		pthread_mutex_unlock(&mutex1);
+		pthread_cond_signal(&full2);
+		pthread_mutex_unlock(&mutex2);
 	
-		pthread_mutex_lock(&mutex2);	
-
+		/*
 		for (int j = 0; j < count; j++) {
 			fill_buf2(str[j]);
 		}	
+		*/
 
-		///*
+		/*
 		pthread_cond_signal(&full2);
 		pthread_mutex_unlock(&mutex2);
-		//*/
+		*/
 	}
 
 	printf("closing space\n");
@@ -223,7 +224,6 @@ void* read_input(void* args) {
 		pthread_mutex_lock(&mutex1);
 	
 		if (strcmp(line, "STOP\n") == 0) {	
-			//printf("found stop\n");
 			term_sym = 1;
 		} else {
 			str = calloc(strlen(line), sizeof(char));
