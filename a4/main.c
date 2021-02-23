@@ -13,11 +13,17 @@
 #define SIZE LINE_LEN * LINE_CNT 
 #define COUNT 80
 
+void ps(char* context, char* msg) {
+#ifdef ALVDBG
+	printf("%s | %s\n", context, msg);
+	fflush(stdout);
+#endif
+}
+
 /*
  mutex4 acts as the boundary that the characters will 'stay within'
-	
 */
-int alvdbg = 0;
+
 // buffers 1 and 2 used for all preprocessing.
 // buffer 3 is the final consumer
 char buffer_1[SIZE];
@@ -64,7 +70,7 @@ void* output(void* args) {
 
 		if (strcmp(line, "STOP\n") == 0) {	
 			term_sym = 1;
-			if (alvdbg) printf("at output\n");
+			ps("output", "output stop");
 		} else {
 
 			int cur_line_count = (strlen(print_buffer))/80;
@@ -87,7 +93,7 @@ void* output(void* args) {
 		pthread_mutex_unlock(&mutex4);
 	}
 
-	if (alvdbg) printf("output exit\n");
+	ps("output", "output exit");
 
 	return NULL;
 }
@@ -99,6 +105,7 @@ char* replaceTerm(const char *line, const char *term, const char *replacement_te
 	assert(line);
 	assert(term);
 	assert(replacement_term);
+	assert(strlen(term) >= strlen(replacement_term));
 	
     // note this depends on the target line len <= source line length
     char *buf = calloc(strlen(line)+1, sizeof(char));
@@ -107,6 +114,7 @@ char* replaceTerm(const char *line, const char *term, const char *replacement_te
     // while we are still finding term 
     while((p = strstr(rest, term)))
     {
+				// "the term being checked + [the remaining chars to be checked]"
         strncat(buf, rest, (size_t)(p - rest));
         strcat(buf, replacement_term);
         rest = p + strlen(term);
@@ -129,14 +137,13 @@ void* plus_plus(void* args) {
 			pthread_cond_wait(&full2, &mutex2);
 		}
 		strcpy(str, buffer_2);
-
 		buf2_count--;
 
 		pthread_mutex_unlock(&mutex2);
 
 		if (strcmp(str, "STOP\n") == 0) {	
 			term_sym = 1;
-			if (alvdbg) printf("at plus\n");
+			ps("plusplus", "plus stop");
 			new_str = str;
 		}	
 		else { 
@@ -152,7 +159,7 @@ void* plus_plus(void* args) {
 		pthread_mutex_unlock(&mutex3);
  	}
 
-	if (alvdbg) printf("plus exit\n");
+	ps("plusplus", "plus exit");
 
 	return NULL;
 }
@@ -165,7 +172,6 @@ void* plus_plus(void* args) {
 void* space_replace(void* args) {
 	char* str = calloc(LINE_LEN, sizeof(char));
 	int term_sym = 0;	
-
 	while (term_sym == 0) {
 
 		pthread_mutex_lock(&mutex1);
@@ -181,7 +187,7 @@ void* space_replace(void* args) {
 		
 		if (strcmp(str, "STOP\n") == 0) {	
 			term_sym = 1;
-			if (alvdbg) printf("at space\n");
+			ps("space replace", "space stop");
 		}	else { 
 			int len = strlen(str);
 			if (str[len - 1] == '\n') {	
@@ -199,7 +205,7 @@ void* space_replace(void* args) {
 		pthread_mutex_unlock(&mutex2);
 	}
 
-	if (alvdbg) printf("space end\n");
+	ps("space replace", "space exit");
 
 	return NULL;
 }
@@ -208,6 +214,7 @@ void* space_replace(void* args) {
 void* read_input(void* args) {
 	char* line = calloc(LINE_LEN, sizeof(char));
 	int term_sym = 0;
+
 
 	while (term_sym == 0) {
 		fgets(line, LINE_LEN, stdin);
@@ -233,7 +240,7 @@ void* read_input(void* args) {
 		} 
 	}
 
-	if (alvdbg) printf("read end\n");
+	ps("read input","read end");
 
 	return NULL;
 }
@@ -290,8 +297,8 @@ int main(int argc, char* argv[]) {
 	pthread_join(plus_t, NULL);
 	pthread_join(output_t, NULL);
 
-	close(fd1);
-	close(fd2);
+	//close(fd1);
+	//close(fd2);
 
 	return EXIT_SUCCESS;
 }
