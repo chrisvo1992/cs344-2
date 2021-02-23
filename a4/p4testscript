@@ -1,0 +1,29 @@
+#!/bin/bash
+
+echo "Starting UNOFFICIAL student-written p4testscript."
+echo "NOTE: If at any point this shell script hangs, it is possible your threads are in deadlock."
+echo
+echo
+echo "Testing input1.txt..."
+./line_processor < input1.txt > testoutput1.txt
+
+echo "Checking if input1.txt returned a result different than expected output1.txt."
+echo "If there is error you will see output, else nothing."
+diff output1.txt testoutput1.txt
+echo
+echo "Moving on to input2.txt..."
+./line_processor < input2.txt > testoutput2.txt
+
+echo "Checking if input2.txt returned a result different than expected output2.txt."
+echo "If there is error you will see output, else nothing."
+diff output2.txt testoutput2.txt
+echo
+echo "Moving on to input3.txt..."
+./line_processor < input3.txt > testoutput3.txt
+
+echo "Checking if input3.txt returned a result different than expected output3.txt."
+echo "If there is error you will see output, else nothing."
+diff output3.txt testoutput3.txt
+echo
+echo "Test complete. Cleaning up."
+rm -rf testoutput*.txt
