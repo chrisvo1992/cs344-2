@@ -119,6 +119,7 @@ void* output(void* args) {
 		}
 		pthread_mutex_unlock(&mutex3);
 	}
+	printf("o");fflush(stdout);
 	return NULL;
 }
 
@@ -176,6 +177,7 @@ void* plus_plus(void* args) {
 		pthread_cond_signal(&full3);
 		pthread_mutex_unlock(&mutex3);
  	}
+	printf("p");fflush(stdout);
 	return NULL;
 }
 
@@ -243,6 +245,7 @@ void* space_replace(void* args) {
 		pthread_mutex_unlock(&mutex2);
 		*/
 	}
+	printf("s");fflush(stdout);
 	return NULL;
 }
 
@@ -285,6 +288,7 @@ void* read_input(void* args) {
 		pthread_cond_signal(&full1);
 		pthread_mutex_unlock(&mutex1);
 	}
+	printf("r");fflush(stdout);
 	return NULL;
 }
 
