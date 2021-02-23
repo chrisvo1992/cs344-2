@@ -6,38 +6,29 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <ctype.h>
-
+#include <assert.h>
 
 #define LINE_LEN 1000
 #define LINE_CNT 50
 #define SIZE LINE_LEN * LINE_CNT 
 #define COUNT 80
 
+/*
+ mutex4 acts as the boundary that the characters will 'stay within'
+	
+*/
+int alvdbg = 0;
 // buffers 1 and 2 used for all preprocessing.
 // buffer 3 is the final consumer
 char buffer_1[SIZE];
 char buffer_2[SIZE];
 char buffer_3[SIZE];
 
-int prod1_idx = 0;
-int cons1_idx = 0;
-
-int prod2_idx = 0;
-int cons2_idx = 0;
-
-int prod3_idx = 0;
-int cons3_idx = 0;
-
-// if true, stops reading from stdin
-int term_sym = 0;
-
 // count keeps track of buffer count
 int buf1_count = 0;
 int buf2_count = 0;
 int buf3_count = 0;
-
-// never greater than 2
-int plus_counter = 0;
+int buf4_count = 0;
 
 pthread_mutex_t  mutex1 = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t full1 = PTHREAD_COND_INITIALIZER;
@@ -48,136 +39,121 @@ pthread_cond_t full2 = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t  mutex3 = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t full3 = PTHREAD_COND_INITIALIZER;
 
-// reads one char, no checking, not needed
-char get_char() {
-	char str;
-	scanf("%c", &str);
-	return str;
-}
-
-void fill_buf1(char val) {
-	buffer_1[prod1_idx] = val;
-	prod1_idx = prod1_idx + 1;
-	buf1_count = buf1_count + 1;	
-}
-
-char get_buf1() {
-	char ch = buffer_1[cons1_idx];
-	cons1_idx = cons1_idx + 1;
-	buf1_count = buf1_count - 1;
-	return ch;
-}
-
-void fill_buf2(char val) {
-	buffer_2[prod2_idx] = val;
-	prod2_idx = prod2_idx + 1;
-	buf2_count = buf2_count + 1;	
-}
-
-char get_buf2() {
-	char ch = buffer_2[cons2_idx];
-	cons2_idx = cons2_idx + 1;
-	buf2_count = buf2_count - 1;
-	return ch;
-}
-
-void fill_buf3(char val) {
-	buffer_3[prod3_idx] = val;
-	prod3_idx = prod3_idx + 1;
-	buf3_count = buf3_count + 1;	
-}
-
-char get_buf3() {
-	char ch = buffer_3[cons3_idx];
-	cons3_idx = cons3_idx + 1;
-	buf3_count = buf3_count - 1;
-	return ch;
-}
+pthread_mutex_t  mutex4 = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t full4 = PTHREAD_COND_INITIALIZER;
 
 void* output(void* args) {
-	char str[SIZE] = "";
-	int i = 0;
-
+	int term_sym = 0;
+	int last_line = 0;
+	char output[81] = {0};
+	char* line = calloc(LINE_LEN, sizeof(char));
+	char* print_buffer = calloc(SIZE, sizeof(char));
+		
 	while (term_sym == 0) {
 		pthread_mutex_lock(&mutex3);	
-		///*
+
 		while (buf3_count == 0 ) {
 			pthread_cond_wait(&full3, &mutex3);
 		}
-		//*/
-		//pthread_mutex_unlock(&mutex3);
+		strcpy(line, buffer_3);
+		strcat(print_buffer, buffer_3);
 
-// t1 -> b1 -> t2 -> b2 -> t3 -> b3 -> t4
+		buf3_count--;
 
-		while (buf3_count >= 0) {
-			//printf("b3: %i\n", buf3_count);
-			//fflush(stdout);
-			str[i] = get_buf3();
-			//if ((i % 10) == 0) {printf("\n");fflush(stdout);}
-			printf("%c", str[i]);fflush(stdout);
-			i++;
-		}
 		pthread_mutex_unlock(&mutex3);
+
+		if (strcmp(line, "STOP\n") == 0) {	
+			term_sym = 1;
+			if (alvdbg) printf("at output\n");
+		} else {
+
+			int cur_line_count = (strlen(print_buffer))/80;
+
+			for (int line = last_line; line < cur_line_count; line++) {
+				memset(output, 0, 81); // clear the output line
+				strncpy(output, print_buffer + (line*80), 80);
+
+				printf("%s\n", output);
+
+				fflush(stdout);
+			}
+
+			last_line = cur_line_count;
+			
+		}
+		pthread_mutex_lock(&mutex4);
+	 	buf4_count--;
+		pthread_cond_signal(&full4);
+		pthread_mutex_unlock(&mutex4);
 	}
-	printf("o");fflush(stdout);
+
+	if (alvdbg) printf("output exit\n");
+
 	return NULL;
 }
 
+// requires len(replacement_term) <= len(term)
+char* replaceTerm(const char *line, const char *term, const char *replacement_term)
+{
+	// fail if we have any null args
+	assert(line);
+	assert(term);
+	assert(replacement_term);
+	
+    // note this depends on the target line len <= source line length
+    char *buf = calloc(strlen(line)+1, sizeof(char));
+    const char *p = NULL;
+    const char *rest = line;
+    // while we are still finding term 
+    while((p = strstr(rest, term)))
+    {
+        strncat(buf, rest, (size_t)(p - rest));
+        strcat(buf, replacement_term);
+        rest = p + strlen(term);
+    }
+   // no more term, so just tack on what's left
+    strcat(buf, rest);
+    return buf;
+}
+
 void* plus_plus(void* args) {
-	char ch1;
-	char ch2;
-	char ch3;
-
-/*
- 		Youur get_ and fill_ functions should be 
-		in their own lock/unlock blocks. for example 
-		in space_replace it should be:
-
-    lock mutex1
-    while empty
-        wait(full1, mutex1)
-    get_buf1 stuff
-    unlock mutex1
-    lock mutex2
-    fill_buff2
-    signal full2
-    unlock mutex2
- */
+	int term_sym = 0;
+	char* str = calloc(LINE_LEN, sizeof(char));
+	char* new_str;
 
 	while (term_sym == 0 ) {
 
 		pthread_mutex_lock(&mutex2);
 
-		///*
-		while (buf2_count < 2) {
+		while (buf2_count == 0) {
 			pthread_cond_wait(&full2, &mutex2);
 		}
-		//*/
+		strcpy(str, buffer_2);
+
+		buf2_count--;
+
 		pthread_mutex_unlock(&mutex2);
+
+		if (strcmp(str, "STOP\n") == 0) {	
+			term_sym = 1;
+			if (alvdbg) printf("at plus\n");
+			new_str = str;
+		}	
+		else { 
+			new_str = replaceTerm(str, "++", "^");
+		}
 
 		pthread_mutex_lock(&mutex3);
 	
-		while (buf2_count >= 0) {
-			//printf("b2: %i\n", buf2_count);
-			//fflush(stdout);
-			ch1 = get_buf2();
-			if (ch1 == '+') {
-				ch2 = get_buf2();
-				if (ch2 == '+') {
-					ch3 = '^';
-					fill_buf3(ch3);
-				}	else {
-					fill_buf3(ch1);
-					fill_buf3(ch2);
-				}
-			} else {
-				fill_buf3(ch1);
-			}
-		}
+		strcpy(buffer_3, new_str);
+		buf3_count++;	
+
 		pthread_cond_signal(&full3);
 		pthread_mutex_unlock(&mutex3);
  	}
-	printf("p");fflush(stdout);
+
+	if (alvdbg) printf("plus exit\n");
+
 	return NULL;
 }
 
@@ -187,113 +163,86 @@ void* plus_plus(void* args) {
 // space. retrieves the character values with the
 // get_buf1 function
 void* space_replace(void* args) {
-	char ch;	
-	//char str[LINE_LEN] = "";
-	//int i,count;
-/*
- 		Youur get_ and fill_ functions should be 
-		in their own lock/unlock blocks. for example 
-		in space_replace it should be:
-
-    lock mutex1
-    while empty
-        wait(full1, mutex1)
-    get_buf1 stuff
-    unlock mutex1
-    lock mutex2
-    fill_buff2
-    signal full2
-    unlock mutex2
- */
+	char* str = calloc(LINE_LEN, sizeof(char));
+	int term_sym = 0;	
 
 	while (term_sym == 0) {
-		//i = 0;
-		//count = 0;
 
 		pthread_mutex_lock(&mutex1);
-		///*
-		while (buf1_count == 0 ) {
+
+		while (buf1_count == 0) {
 			pthread_cond_wait(&full1, &mutex1);
 		}
-		//*/
+
+		strcpy(str, buffer_1);
+		buf1_count--;
+
 		pthread_mutex_unlock(&mutex1);
 		
-		pthread_mutex_lock(&mutex2);
-
-		while (buf1_count >= 0) {
-			//printf("b1: %i\n", buf1_count);
-			//fflush(stdout);
-			ch = get_buf1();	
-			if (ch == '\n') {
-				ch = ' '; 
+		if (strcmp(str, "STOP\n") == 0) {	
+			term_sym = 1;
+			if (alvdbg) printf("at space\n");
+		}	else { 
+			int len = strlen(str);
+			if (str[len - 1] == '\n') {	
+				str[len - 1] = ' ';
 			}
-			//str[i] = ch;	
-			//count++;
-			fill_buf2(ch);	
 		}
 
-		pthread_cond_signal(&full2);
-		pthread_mutex_unlock(&mutex2);
+		pthread_mutex_lock(&mutex2);
 			
-		/*
-		for (int j = 0; j < count; j++) {
-			fill_buf2(str[j]);
-		}	
-		*/
-		/*
+		strcpy(buffer_2, str);
+		
+		buf2_count++;
+
 		pthread_cond_signal(&full2);
 		pthread_mutex_unlock(&mutex2);
-		*/
 	}
-	printf("s");fflush(stdout);
+
+	if (alvdbg) printf("space end\n");
+
 	return NULL;
 }
 
 // consumes input and passes it to buffer_1
 void* read_input(void* args) {
-	char line[LINE_LEN] = "";
-	char* str = NULL;
-/*
- 		Youur get_ and fill_ functions should be 
-		in their own lock/unlock blocks. for example 
-		in space_replace it should be:
-
-    lock mutex1
-    while empty
-        wait(full1, mutex1)
-    get_buf1 stuff
-    unlock mutex1
-    lock mutex2
-    fill_buff2
-    signal full2
-    unlock mutex2
- */
+	char* line = calloc(LINE_LEN, sizeof(char));
+	int term_sym = 0;
 
 	while (term_sym == 0) {
 		fgets(line, LINE_LEN, stdin);
 
 		pthread_mutex_lock(&mutex1);
 	
-		if (strcmp(line, "STOP\n") == 0) {	
-			term_sym = 1;
-		} else {
-			str = calloc(strlen(line), sizeof(char));
-			strcpy(str, line);
-			for (int j = 0; j < strlen(line); j++) {
-				fill_buf1(str[j]);	
-			}
-			free(str);
-		}
+		strcpy(buffer_1, line);	
+
+		buf1_count++;
 
 		pthread_cond_signal(&full1);
 		pthread_mutex_unlock(&mutex1);
+
+		pthread_mutex_lock(&mutex4);
+		while (buf4_count == 0) {
+			pthread_cond_wait(&full4, &mutex4);
+		}
+		buf4_count++;
+		pthread_mutex_unlock(&mutex4);
+
+		if (strcmp(line, "STOP\n") == 0) {	
+			term_sym = 1;
+		} 
 	}
-	printf("r");fflush(stdout);
+
+	if (alvdbg) printf("read end\n");
+
 	return NULL;
 }
 
 int main(int argc, char* argv[]) {
-	int fd1, fd2;
+	// yes, this happened 
+	/*
+ int fd1, fd2;
+
 
 	if (argc > 3) {
 		// ./main > out < in 
@@ -324,6 +273,7 @@ int main(int argc, char* argv[]) {
 			dup2(fd1, 0);
 		}	
 	}
+	*/
 
 	pthread_t input_t; 
 	pthread_t replace_t;
@@ -342,10 +292,6 @@ int main(int argc, char* argv[]) {
 
 	close(fd1);
 	close(fd2);
-	/*
-	printf("buffer 1: %s %ld\n", buffer_1, strlen(buffer_1));
-	printf("buffer 2: %s %ld\n", buffer_2, strlen(buffer_2));
-	printf("buffer 3: %s %ld\n", buffer_3, strlen(buffer_3));
-	*/
+
 	return EXIT_SUCCESS;
 }
