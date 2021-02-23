@@ -168,10 +168,11 @@ void* plus_plus(void* args) {
 void* space_replace(void* args) {
 	char ch;	
 	char str[LINE_LEN] = "";
-	int i;
+	int i,count;
 
 	while (term_sym == 0) {
 		i = 0;
+		count = 0;
 		///*
 		pthread_mutex_lock(&mutex1);
 
@@ -186,14 +187,14 @@ void* space_replace(void* args) {
 				ch = ' '; 
 			}
 			str[i] = ch;	
+			count++;
 			//fill_buf2(ch);	
 		}
 		pthread_mutex_unlock(&mutex1);
-
 	
 		pthread_mutex_lock(&mutex2);	
 
-		for (int j = 0; j < strlen(str); j++) {
+		for (int j = 0; j < count; j++) {
 			fill_buf2(str[j]);
 		}	
 
