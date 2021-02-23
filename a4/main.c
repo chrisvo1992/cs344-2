@@ -101,36 +101,54 @@ void* output(void* args) {
 	while (term_sym == 0) {
 		pthread_mutex_lock(&mutex3);	
 		///*
-		while (buf3_count == 0) {
+		while (buf3_count == 0 ) {
 			pthread_cond_wait(&full3, &mutex3);
 		}
 		//*/
-		pthread_mutex_unlock(&mutex3);
+		//pthread_mutex_unlock(&mutex3);
 
-		while (buf3_count > 0) {
+// t1 -> b1 -> t2 -> b2 -> t3 -> b3 -> t4
+
+		while (buf3_count >= 0) {
+			//printf("b3: %i\n", buf3_count);
+			//fflush(stdout);
 			str[i] = get_buf3();
 			//if ((i % 10) == 0) {printf("\n");fflush(stdout);}
-			printf("%c", str[i]);
-			fflush(stdout);
+			printf("%c", str[i]);fflush(stdout);
 			i++;
 		}
+		pthread_mutex_unlock(&mutex3);
 	}
-	printf("closing output\n");
 	return NULL;
 }
-
 
 void* plus_plus(void* args) {
 	char ch1;
 	char ch2;
 	char ch3;
 
+/*
+ 		Youur get_ and fill_ functions should be 
+		in their own lock/unlock blocks. for example 
+		in space_replace it should be:
+
+    lock mutex1
+    while empty
+        wait(full1, mutex1)
+    get_buf1 stuff
+    unlock mutex1
+    lock mutex2
+    fill_buff2
+    signal full2
+    unlock mutex2
+ */
+
 	while (term_sym == 0 ) {
 
 		pthread_mutex_lock(&mutex2);
 
 		///*
-		while (buf2_count == 0) {
+		while (buf2_count < 2) {
 			pthread_cond_wait(&full2, &mutex2);
 		}
 		//*/
@@ -138,7 +156,9 @@ void* plus_plus(void* args) {
 
 		pthread_mutex_lock(&mutex3);
 	
-		while (buf2_count > 0) {
+		while (buf2_count >= 0) {
+			//printf("b2: %i\n", buf2_count);
+			//fflush(stdout);
 			ch1 = get_buf2();
 			if (ch1 == '+') {
 				ch2 = get_buf2();
@@ -156,7 +176,6 @@ void* plus_plus(void* args) {
 		pthread_cond_signal(&full3);
 		pthread_mutex_unlock(&mutex3);
  	}
-	printf("closing plus\n");
 	return NULL;
 }
 
@@ -167,17 +186,31 @@ void* plus_plus(void* args) {
 // get_buf1 function
 void* space_replace(void* args) {
 	char ch;	
-	char str[LINE_LEN] = "";
-	int i,count;
+	//char str[LINE_LEN] = "";
+	//int i,count;
+/*
+ 		Youur get_ and fill_ functions should be 
+		in their own lock/unlock blocks. for example 
+		in space_replace it should be:
+
+    lock mutex1
+    while empty
+        wait(full1, mutex1)
+    get_buf1 stuff
+    unlock mutex1
+    lock mutex2
+    fill_buff2
+    signal full2
+    unlock mutex2
+ */
 
 	while (term_sym == 0) {
-		i = 0;
-		count = 0;
-
+		//i = 0;
+		//count = 0;
 
 		pthread_mutex_lock(&mutex1);
 		///*
-		while (buf1_count == 0) {
+		while (buf1_count == 0 ) {
 			pthread_cond_wait(&full1, &mutex1);
 		}
 		//*/
@@ -185,31 +218,31 @@ void* space_replace(void* args) {
 		
 		pthread_mutex_lock(&mutex2);
 
-		while (buf1_count > 0) {
+		while (buf1_count >= 0) {
+			//printf("b1: %i\n", buf1_count);
+			//fflush(stdout);
 			ch = get_buf1();	
 			if (ch == '\n') {
 				ch = ' '; 
 			}
-			str[i] = ch;	
-			count++;
+			//str[i] = ch;	
+			//count++;
 			fill_buf2(ch);	
 		}
+
 		pthread_cond_signal(&full2);
 		pthread_mutex_unlock(&mutex2);
-	
+			
 		/*
 		for (int j = 0; j < count; j++) {
 			fill_buf2(str[j]);
 		}	
 		*/
-
 		/*
 		pthread_cond_signal(&full2);
 		pthread_mutex_unlock(&mutex2);
 		*/
 	}
-
-	printf("closing space\n");
 	return NULL;
 }
 
@@ -217,6 +250,21 @@ void* space_replace(void* args) {
 void* read_input(void* args) {
 	char line[LINE_LEN] = "";
 	char* str = NULL;
+/*
+ 		Youur get_ and fill_ functions should be 
+		in their own lock/unlock blocks. for example 
+		in space_replace it should be:
+
+    lock mutex1
+    while empty
+        wait(full1, mutex1)
+    get_buf1 stuff
+    unlock mutex1
+    lock mutex2
+    fill_buff2
+    signal full2
+    unlock mutex2
+ */
 
 	while (term_sym == 0) {
 		fgets(line, LINE_LEN, stdin);
@@ -237,11 +285,41 @@ void* read_input(void* args) {
 		pthread_cond_signal(&full1);
 		pthread_mutex_unlock(&mutex1);
 	}
-	printf("closing read\n");
 	return NULL;
 }
 
 int main(int argc, char* argv[]) {
+	int fd1, fd2;
+
+	if (argc > 3) {
+		// ./main > out < in 
+		if (strcmp(argv[1], ">") == 0) {
+			fd1 = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC);
+			fd2 = open(argv[4], O_RDONLY);
+			dup2(fd1, 1);
+			dup2(fd2, 0);	
+		}	
+		// ./main < in > out
+		if (strcmp(argv[1], "<") == 0) {
+			fd1 = open(argv[2], O_RDONLY);
+			fd2 = open(argv[4], O_WRONLY | O_CREAT | O_TRUNC);
+			dup2(fd1, 0);
+			dup2(fd2, 1);	
+		}	
+	}
+
+	if (argc > 1 && argc < 4) {
+		// ./main > out
+		if (strcmp(argv[1], ">") == 0) {
+			fd1 = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC);
+			dup2(fd1, 1);
+		}	
+		// ./main < in
+		if (strcmp(argv[1], "<") == 0) {
+			fd1 = open(argv[2], O_RDONLY);
+			dup2(fd1, 0);
+		}	
+	}
 
 	pthread_t input_t; 
 	pthread_t replace_t;
@@ -258,6 +336,8 @@ int main(int argc, char* argv[]) {
 	pthread_join(plus_t, NULL);
 	pthread_join(output_t, NULL);
 
+	close(fd1);
+	close(fd2);
 	/*
 	printf("buffer 1: %s %ld\n", buffer_1, strlen(buffer_1));
 	printf("buffer 2: %s %ld\n", buffer_2, strlen(buffer_2));
