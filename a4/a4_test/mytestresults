@@ -1,0 +1,19 @@
+Starting UNOFFICIAL student-written p4testscript.
+NOTE: If at any point this shell script hangs, it is possible your threads are in deadlock.
+
+
+Testing input1.txt...
+Checking if input1.txt returned a result different than expected output1.txt.
+If there is error you will see output, else nothing.
+diff: output1.txt: No such file or directory
+
+Moving on to input2.txt...
+Checking if input2.txt returned a result different than expected output2.txt.
+If there is error you will see output, else nothing.
+diff: output2.txt: No such file or directory
+
+Moving on to input3.txt...
+Checking if input3.txt returned a result different than expected output3.txt.
+If there is error you will see output, else nothing.
+
+Test complete. Cleaning up.
