@@ -100,13 +100,13 @@ void* output(void* args) {
 
 	while (term_sym == 0) {
 
-		//pthread_mutex_lock(&mutex3);	
+		pthread_mutex_lock(&mutex3);	
 
-		/*
+		///*
 		while (buf3_count == 0) {
 			pthread_cond_wait(&full3, &mutex3);
 		}
-		*/
+		//*/
 
 		while (buf3_count > 0) {
 			str[i] = get_buf3();
@@ -115,7 +115,8 @@ void* output(void* args) {
 			fflush(stdout);
 			i++;
 		}
-		//pthread_mutex_unlock(&mutex3);
+
+		pthread_mutex_unlock(&mutex3);
 	}
 	printf("closing output\n");
 	return NULL;
@@ -129,13 +130,17 @@ void* plus_plus(void* args) {
 
 	while (term_sym == 0 ) {
 
-		pthread_mutex_lock(&mutex3);
+		pthread_mutex_lock(&mutex2);
 
-		/*
+		///*
 		while (buf2_count == 0) {
 			pthread_cond_wait(&full2, &mutex2);
 		}
-		*/
+		//*/
+		
+		pthread_mutex_unlock(&mutex2);
+
+		pthread_mutex_lock(&mutex3);
 	
 		while (buf2_count > 0) {
 			ch1 = get_buf2();
@@ -152,9 +157,8 @@ void* plus_plus(void* args) {
 				fill_buf3(ch1);
 			}
 		}
-
-		//pthread_cond_signal(&full3);
-		//pthread_mutex_unlock(&mutex3);
+		pthread_cond_signal(&full3);
+		pthread_mutex_unlock(&mutex3);
  	}
 	printf("closing plus\n");
 	return NULL;
