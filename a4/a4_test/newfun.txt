@@ -1,0 +1,23 @@
+// requires len(replacement_term) <= len(term)
+char* replaceTerm(const char *line, const char *term, const char *replacement_term)
+{
+	// fail if we have any null args
+	assert(line);
+	assert(term);
+	assert(replacement_term);
+	
+    // note this depends on the target line len <= source line length
+    char *buf = calloc(strlen(line)+1, sizeof(char));
+    const char *p = NULL;
+    const char *rest = line;
+    // while we are still finding term 
+    while((p = strstr(rest, term)))
+    {
+        strncat(buf, rest, (size_t)(p - rest));
+        strcat(buf, replacement_term);
+        rest = p + strlen(term);
+    }
+   // no more term, so just tack on what's left
+    strcat(buf, rest);
+    return buf;
+}

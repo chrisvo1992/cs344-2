@@ -1,0 +1,113 @@
+
+
+
+
+create a buffer_1 for the characters read
+create a buffer_2 for the conversion of line sep to space 
+create a buffer_3 for the conversion of ++ to ^ 
+
+threads:
+	1. read_input_t, reads from stdin, replacing all line separators by a space.
+	2. space_replace_t, replaces all line separators by a space.
+	3. plus_plus_t, replaces every pair of ++ with ^.
+	4. output_t, write line(s) of 80 characters plus the remaining < 80
+		when a termination symbol is encountered, followed by a line
+		separator.
+
+definitions:
+	line separator = '\n'
+	termination symbol = STOP, with spaces at beg and end, all upper case
+	allowed chars = ascii values [32,126]
+	80 char line = 80 chars + line separator
+
+requirements:
+	- no character processing takes place after termination symbol.
+	- input will not contain any empty lines.
+	- an input line will not be longer than 1000 characters, including the 
+		line separator.
+	- the input for the program will never have more than 49 lines before
+		the termination symbol
+	- program does not need to do any input checking
+	- program will not wait until reaching term symbol to print output.
+		when 80 chars have been read, print them.
+
+
+
+while (term_sym is false) {
+
+	->	read chars from stdin.
+		
+	->	send each char to buffer1.
+
+	-> 	increment buffer_1 count
+
+	->	while buffer_1 count is not 0 {
+					
+				->	check each char in buffer_1 
+		
+				->	if the char is '\n', replace it with ' '.
+
+				->	begin checking for the term sym:
+
+				->	if the input line contain only the stopping condition { 
+
+							stop sending chars to buffer_1
+
+							set the term_sym to true
+
+						} else { 
+
+								send the character to buffer_2
+			
+								increment buffer_2 count
+
+								decrement buffer_1 count
+						}
+			}
+
+
+	->	while buffer_2 count is not 0 {
+	
+				-> 	check each char in buffer_2
+
+				->	if the char is + {
+
+							-> 	read the next char	
+
+							->	if it is another + {
+	
+										set the char to send to ^	
+										
+										send that char to buffer_3
+				
+										increment buffer_3 count
+
+									}	else {
+									
+										send both of the charsto buffer_3	
+
+										increment buffer_3 count 
+			
+										->	if buffer_3 count is 80 {
+												
+													print the contents of buffer_3 to stdout
+
+													decrement buffer_3 count on each char output
+												}
+									} else {
+											send the char to buffer 3
+									}
+						}	
+			}
+}
+
+
+
+
+
+
+
+
+
+
+

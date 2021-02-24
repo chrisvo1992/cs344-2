@@ -13,16 +13,13 @@
 #define SIZE LINE_LEN * LINE_CNT 
 #define COUNT 80
 
+// debug tactic provided by M.Slater
 void ps(char* context, char* msg) {
 #ifdef ALVDBG
 	printf("%s | %s\n", context, msg);
 	fflush(stdout);
 #endif
 }
-
-/*
- mutex4 acts as the boundary that the characters will 'stay within'
-*/
 
 // buffers 1 and 2 used for all preprocessing.
 // buffer 3 is the final consumer
@@ -45,6 +42,9 @@ pthread_cond_t full2 = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t  mutex3 = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t full3 = PTHREAD_COND_INITIALIZER;
 
+/*
+ mutex4 acts as the boundary that the characters will 'stay within'
+*/
 pthread_mutex_t  mutex4 = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t full4 = PTHREAD_COND_INITIALIZER;
 
@@ -52,6 +52,7 @@ void* output(void* args) {
 	int term_sym = 0;
 	int last_line = 0;
 	char output[81] = {0};
+	//
 	char* line = calloc(LINE_LEN, sizeof(char));
 	char* print_buffer = calloc(SIZE, sizeof(char));
 		
@@ -61,6 +62,7 @@ void* output(void* args) {
 		while (buf3_count == 0 ) {
 			pthread_cond_wait(&full3, &mutex3);
 		}
+
 		strcpy(line, buffer_3);
 		strcat(print_buffer, buffer_3);
 
@@ -75,12 +77,11 @@ void* output(void* args) {
 
 			int cur_line_count = (strlen(print_buffer))/80;
 
+			// line n prints 80 character
 			for (int line = last_line; line < cur_line_count; line++) {
 				memset(output, 0, 81); // clear the output line
 				strncpy(output, print_buffer + (line*80), 80);
-
 				printf("%s\n", output);
-
 				fflush(stdout);
 			}
 
@@ -88,6 +89,7 @@ void* output(void* args) {
 			
 		}
 		pthread_mutex_lock(&mutex4);
+		// loop control	
 	 	buf4_count--;
 		pthread_cond_signal(&full4);
 		pthread_mutex_unlock(&mutex4);
@@ -153,6 +155,9 @@ void* plus_plus(void* args) {
 		pthread_mutex_lock(&mutex3);
 	
 		strcpy(buffer_3, new_str);
+
+		// passes all the current character in the line buffer
+		// to the next thread
 		buf3_count++;	
 
 		pthread_cond_signal(&full3);
@@ -217,6 +222,9 @@ void* read_input(void* args) {
 
 
 	while (term_sym == 0) {
+		// consume every line as one unit, bufX_count.
+		// every thread consumes one or more units
+		// until unit count is 0 in that thread.
 		fgets(line, LINE_LEN, stdin);
 
 		pthread_mutex_lock(&mutex1);
