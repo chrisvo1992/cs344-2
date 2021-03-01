@@ -6,7 +6,9 @@
 	including the space char.
 
 	generated with random unix methods
-
+	
+	the first argument will specify the number
+	of characters to generate in the key file
 		
 */
 int main(int argc, char* argv[]) {
@@ -17,7 +19,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	for (int i = 0; i < argc; i++) {
-		printf(" %d ", rand());
+		printf(" %d ", rand());	
+		printf("");	
 	}
 
 	return 0;
