@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 /*
  	creates a key file of a specified length. 
 	characters will be any of the 27 chars, 
@@ -32,6 +33,8 @@
 	////////////////////////
 */
 int main(int argc, char* argv[]) {
+
+	srand(time(NULL));
 
 	int length = atoi(argv[1]);
 

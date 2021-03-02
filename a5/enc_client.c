@@ -1,3 +1,4 @@
+// file: enc_client.c
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -18,9 +19,15 @@ void error(const char *msg) {
 	exit(0);
 }
 
+/*
 void setupAddressStruct(struct sockaddr_in* address, 
 												int port, 
 												char* hostname){
+*/
+// only the address and port are needed because the connection
+// is local
+void setupAddressStruct(struct sockaddr_in* address, int port) {
+	const char *host = "localhost";
 
 	// clear out the address struct
 	memset((char*) address, '\0', sizeof(*address));
@@ -28,7 +35,7 @@ void setupAddressStruct(struct sockaddr_in* address,
 	address->sin_port = htons(port);
 
 	// get the DNS entry for this host name	
-	struct hostent* hostInfo = gethostbyname(hostname);
+	struct hostent* hostInfo = gethostbyname(host);
 	if (hostInfo == NULL) {
 		fprintf(stderr, "client: ERROR, no such host\n");
 		exit(0);
@@ -40,27 +47,31 @@ void setupAddressStruct(struct sockaddr_in* address,
 					hostInfo->h_length);
 }
 
+// enc_client plaintext testkey port
 int main(int argc, char* argv[]) {
 	
-	int socketFD, portNumber, charsWritten, charsRead;
+	int clientFD, portNumber, charsWritten, charsRead;
 	struct sockaddr_in serverAddress;
 
 	char buffer[256];
-	// check usae and args
 
+	// if not enough supplied arguments
 	if (argc < 3) {
 		fprintf(stderr, "usage: %s hostname port\n", argv[0]);
 		exit(0);
 	}
 
 	// create a socket
-	socketFD = socket(AF_INET, SOCK_STREAM, 0);
-	if (socketFD < 0) {
+	clientFD = socket(AF_INET, SOCK_STREAM, 0);
+	if (clientFD < 0) {
 		error("CLIENT: ERROR opening socket");
 	}
 
-	setupAddressStruct(&serverAddress, atoi(argv[2]), argv[1]);
-	if (connect(socketFD, 
+	// address, port
+	setupAddressStruct(&serverAddress, atoi(argv[3]));
+
+	// init the connection to the socket
+	if (connect(clientFD, 
 							(struct sockaddr*)&serverAddress, 
 							sizeof(serverAddress)) < 0) {
 		error("client: error connecting");
@@ -71,7 +82,7 @@ int main(int argc, char* argv[]) {
 	fgets(buffer, sizeof(buffer) - 1, stdin);
 	buffer[strcspn(buffer, "\n")] = '\0';
 
-	charsWritten = send(socketFD, buffer, strlen(buffer), 0);
+	charsWritten = send(clientFD, buffer, strlen(buffer), 0);
 	if (charsWritten < 0) {
 		error("CLIENT: ERROR writing to socket");
 	}
@@ -82,14 +93,14 @@ int main(int argc, char* argv[]) {
 
 	memset(buffer, '\0', sizeof(buffer));
 
-	charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
+	charsRead = recv(clientFD, buffer, sizeof(buffer) - 1, 0);
 	if (charsRead < 0) {
 		error("CLIENT: ERROR reading from socket");
 	}
 
 	printf("CLIENT: recvd this \"%s\"\n", buffer);
 
-	close(socketFD);
+	close(clientFD);
 
 	return 0;
 }
