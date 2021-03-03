@@ -6,93 +6,99 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+// Error function used for reporting issues
 void error(const char *msg) {
-	perror(msg);
-	exit(1);
-}	
+  perror(msg);
+  exit(1);
+} 
 
-// man7.org/linux/man-pages/man7/ip.7.html/ refers to it.	
-void setupAddressStruct(struct sockaddr_in* address, int port) {
-	memset((char*) address, '\0', sizeof(*address));
-	address->sin_family = AF_INET;
-	address->sin_port = htons(port);
-	//address->sin_addr.s_addr = INADDR_ANY;
-	address->sin_addr.s_addr = "localhost";
+// Set up the address struct for the server socket
+void setupAddressStruct(struct sockaddr_in* address, 
+                        int portNumber){
+ 
+  // Clear out the address struct
+  memset((char*) address, '\0', sizeof(*address)); 
+
+  // The address should be network capable
+  address->sin_family = AF_INET;
+  // Store the port number
+  address->sin_port = htons(portNumber);
+  // Allow a client at any address to connect to this server
+  address->sin_addr.s_addr = INADDR_ANY;
 }
 
-int main(int argc, char* argv[]) {
-	
-	int connectingSocket, charsRead;
-	char buffer[256];
-	char* serverMsg = "I am the server,and I have recvd your message.";
-	struct sockaddr_in serverAddress, clientAddress;
-	socklen_t sizeOfClientInfo = sizeof(clientAddress);
-	printf("client address struct: ", clientAddress);
-	
-	// if there are not enough arguments
-	if (argc < 2) {
-		fprintf(stderr, "usage: %s port\n", argv[0]);
-		exit(1);
-	}
-	
-	// create communication endpoint and return a fd to refer to
-	int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-	// must output an error if it cannot be run due to a network
-	// error, such as the ports not being available
-	if (serverSocket < 0) {
-		error("ERROR opening socket");
-	}
+// 	requirements: must ensure that the child process created is 
+// 	communicating with enc_client
+//	input: listening_port as argv[1]
+//	output: write backa  ciphertext to the enc_client that connected
+//				to the server
+int main(int argc, char *argv[]){
+  int connectingSocket, charsRead;
+  char buffer[256];
+	char* response = "enc_server response\0";
+  struct sockaddr_in serverAddress, clientAddress;
+  socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
-	// init the server socket with the provided port
-	setupAddressStruct(&serverAddress, atoi(argv[1]));
+  // Check usage & args
+  if (argc < 2) { 
+    fprintf(stderr,"USAGE: %s port\n", argv[0]); 
+    exit(1);
+  } 
+  
+  // Create the socket that will listen for connections
+  int server = socket(AF_INET, SOCK_STREAM, 0);
+  if (server < 0) {
+    error("ERROR opening socket");
+  }
 
-	// assign the serverAddress to the serverSocket
-	if (bind(serverSocket,
-					(struct sockaddr *)&serverAddress,
-					sizeof(serverAddress)) < 0) {
-		error("ERROR on binding");
-	}
+  // Set up the address struct for the server socket
+  setupAddressStruct(&serverAddress, atoi(argv[1]));
 
-	// passive socket that is now listening for incoming connections.
-	// a max of 5 pending connections can be queued. If the queue is
-	// full, an error with ECONNREFUSED. retransmission is possible,
-	// lookup how to do that and mark this as done: [ ]
-	listen(serverSocket, 5);
+  // Associate the socket to the port
+  if (bind(server, 
+          (struct sockaddr *)&serverAddress, 
+          sizeof(serverAddress)) < 0){
+    error("ERROR on binding");
+  }
 
-	while(1) {
-		// create and return a new fd for the connectingSocket that the 
-		// serverSocket is listening on. The sockets are now connected.
-		connectingSocket = accept(serverSocket, 
-								(struct sockaddr *)&clientAddress,
-								&sizeOfClientInfo);
-		if (connectingSocket < 0) {
-			error("ERROR on accept");
-		}	
-		printf("SERVER: Connected to client running at host %d port %d\n",
-																ntohs(clientAddress.sin_addr.s_addr),
-																ntohs(clientAddress.sin_port));
+  // Start listening for connetions. Allow up to 5 connections to queue up
+  listen(server, 5); 
+  
+  // Accept a connection, blocking if one is not available until one connects
+  while(1){
+    // Accept the connection request which creates a connection socket
+    connectingSocket = accept(server, 
+                (struct sockaddr *)&clientAddress, 
+                &sizeOfClientInfo); 
+    if (connectingSocket < 0){
+      error("ERROR on accept");
+    }
 
-		memset(buffer, '\0', 256);
+    printf("SERVER: Connected to client running at host %d port %d\n", 
+                          ntohs(clientAddress.sin_addr.s_addr),
+                          ntohs(clientAddress.sin_port));
 
-		// return the length of the message on successful completion
-		charsRead = recv(connectingSocket, buffer, 255, 0);
+    // Get the message from the client and display it
+    memset(buffer, '\0', 256);
+    // Read the client's message from the socket
+    charsRead = recv(connectingSocket, buffer, 255, 0); 
+    if (charsRead < 0){
+      error("ERROR reading from socket");
+    }
+    printf("SERVER: I received this from the client: \"%s\"\n", buffer);
 
-		if (charsRead < 0) {
-			error("ERROR reading from socket");
-		}
+    // Send a Success message back to the client
+    charsRead = send(connectingSocket, 
+                    "I am the server, and I got your message", 39, 0); 
 
-		printf("SERVER has recvd \"%s\"\n", buffer);
-
-		charsRead = send(connectingSocket, &serverMsg, sizeof(serverMsg), 0);
-
-		if (charsRead < 0) {
-			error("ERROR writing to socket");
-		} 
-		close(connectingSocket);
-	}
-
-	close(serverSocket);
-
-	return 0;
+    if (charsRead < 0){
+      error("ERROR writing to socket");
+    }
+    // Close the connection socket for this client
+    close(connectingSocket); 
+  }
+  // Close the listening socket
+  close(server); 
+  return 0;
 }

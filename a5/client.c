@@ -24,6 +24,7 @@ void setupAddressStruct(struct sockaddr_in* address,
                         int portNumber, 
                         char* hostname){
  
+	printf("hostname: %s\n", hostname);
   // Clear out the address struct
   memset((char*) address, '\0', sizeof(*address)); 
 
@@ -48,6 +49,7 @@ int main(int argc, char *argv[]) {
   int socketFD, portNumber, charsWritten, charsRead;
   struct sockaddr_in serverAddress;
   char buffer[256];
+
   // Check usage & args
   if (argc < 3) { 
     fprintf(stderr,"USAGE: %s hostname port\n", argv[0]); 
@@ -58,7 +60,7 @@ int main(int argc, char *argv[]) {
   socketFD = socket(AF_INET, SOCK_STREAM, 0); 
   if (socketFD < 0){
     error("CLIENT: ERROR opening socket");
-  }k
+  }
 
    // Set up the server address struct
   setupAddressStruct(&serverAddress, atoi(argv[2]), argv[1]);

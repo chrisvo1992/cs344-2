@@ -1,106 +1,189 @@
-// file: enc_client.c
+#include <stdio.h> // fopen
 #include <stdlib.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#include <sys/types.h>  // ssize_t
+#include <sys/socket.h> // send(),recv()
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <netdb.h>      // gethostbyname()
 
-/*
-	client code
-	1  create a socket and connect to the server specified in the command arguments.
-	2 prompt the user for input and send that input as a message to the server
-	3 print the message received from the server and exit the program. 
+/**
+* Client code
+* 1. Create a socket and connect to the server specified in the command arugments.
+* 2. Prompt the user for input and send that input as a message to the server.
+* 3. Print the message received from the server and exit the program.
 */
 
-void error(const char *msg) {
-	perror(msg);
-	exit(0);
-}
+// Error function used for reporting issues
+void error(const char *msg) { 
+  perror(msg); 
+  exit(0); 
+} 
 
-/*
+// Set up the address struct
 void setupAddressStruct(struct sockaddr_in* address, 
-												int port, 
-												char* hostname){
-*/
-// only the address and port are needed because the connection
-// is local
-void setupAddressStruct(struct sockaddr_in* address, int port) {
-	const char *host = "localhost";
+                        int portNumber, 
+                        char* hostname){
+ 
+  // Clear out the address struct
+  memset((char*) address, '\0', sizeof(*address)); 
 
-	// clear out the address struct
-	memset((char*) address, '\0', sizeof(*address));
-	address->sin_family = AF_INET;
-	address->sin_port = htons(port);
+  // The address should be network capable
+  address->sin_family = AF_INET;
+  // Store the port number
+  address->sin_port = htons(portNumber);
 
-	// get the DNS entry for this host name	
-	struct hostent* hostInfo = gethostbyname(host);
-	if (hostInfo == NULL) {
-		fprintf(stderr, "client: ERROR, no such host\n");
-		exit(0);
-	}
-	
-	// copy the first ip address from the DNS entry to sin_addr.s_addr
-	memcpy((char*) &address->sin_addr.s_addr,
-					hostInfo->h_addr_list[0],
-					hostInfo->h_length);
+  // Get the DNS entry for this host name
+  struct hostent* hostInfo = gethostbyname(hostname); 
+  if (hostInfo == NULL) { 
+    fprintf(stderr, "CLIENT: ERROR, no such host\n"); 
+    exit(0); 
+  }
+  // Copy the first IP address from the DNS entry to sin_addr.s_addr
+  memcpy((char*) &address->sin_addr.s_addr, 
+        hostInfo->h_addr_list[0],
+        hostInfo->h_length);
 }
 
-// enc_client plaintext testkey port
-int main(int argc, char* argv[]) {
-	
-	int clientFD, portNumber, charsWritten, charsRead;
-	struct sockaddr_in serverAddress;
+// cli format: enc_client plaintext mykey port
+int main(int argc, char *argv[]) {
+  int socketFD, charsWritten, charsRead;
+	int c;
+	char* plainText;
+	char* keyText;
+	char* plain_key_message;
+	size_t i, len_plain, len_key;
+	struct stat plainTextSTAT;
+	struct stat keyTextSTAT;
+	FILE* plainTextFD;
+	FILE* keyTextFD;
+	int port = atoi(argv[3]);
+  struct sockaddr_in serverAddress;
+  char buffer[256];
+	char* host = "localhost\0"; 
 
-	char buffer[256];
+  // Check usage & args
+  if (argc < 4) { 
+    fprintf(stderr,"USAGE: %s hostname port\n", argv[0]); 
+    exit(0); 
+  } 
 
-	// if not enough supplied arguments
-	if (argc < 3) {
-		fprintf(stderr, "usage: %s hostname port\n", argv[0]);
-		exit(0);
+	// open the plaintext file
+	plainTextFD = fopen(argv[1], "r");
+	if (plainTextFD == NULL) {
+		perror("PlainTextFile");
+		exit(1);
 	}
 
-	// create a socket
-	clientFD = socket(AF_INET, SOCK_STREAM, 0);
-	if (clientFD < 0) {
-		error("CLIENT: ERROR opening socket");
+	// open the keytext file
+	keyTextFD = fopen(argv[2], "r");	
+	if (keyTextFD == NULL) {
+		perror("KeyTextFile");
+		exit(1);
 	}
 
-	// address, port
-	setupAddressStruct(&serverAddress, atoi(argv[3]));
+	// get the length from each file and create space
+	// for file data
+	stat(argv[1], &plainTextSTAT);
+	len_plain = plainTextSTAT.st_size;
+	// adding 1 to have space for ## at the end of plain text
+	plainText = calloc(len_plain + 1, sizeof(char));
 
-	// init the connection to the socket
-	if (connect(clientFD, 
+	stat(argv[2], &keyTextSTAT);
+	len_key = keyTextSTAT.st_size;
+	keyText = calloc(len_key, sizeof(char));
+	printf("plain text file\n");
+
+	// the length of the plaintext file cannot be
+	// greater than the provided key
+	if (len_plain > len_key) {
+		printf("Length of plain text file is greater than the key\n");
+		exit(1);	
+	}
+
+	i = 0;
+	while (c != EOF) {
+		c = fgetc(plainTextFD);	
+		plainText[i] = c;	
+		i++;
+		printf("%c", c);
+	}
+	plainText[i-2] = '#';
+	plainText[i-1] = '#';
+	plainText[i] = '\0';
+	printf("plain text: %s", plainText);
+
+
+	i = 0;
+	c = 0;
+	while (c != EOF) {
+		c = fgetc(keyTextFD);	
+		keyText[i] = c;	
+		i++;
+	}
+	keyText[i-1] = '\0';
+	keyText[i] = '\0';
+	printf("key text: %s", keyText);
+
+	// concat the plain and key text for the message
+	plain_key_message = calloc(strlen(plainText) + strlen(keyText), 
+															sizeof(char));
+	strcpy(plain_key_message, plainText);
+	strcat(plain_key_message, keyText); 
+	printf("plain key message: %s\n", plain_key_message);
+
+  // Create a socket
+  socketFD = socket(AF_INET, SOCK_STREAM, 0); 
+  if (socketFD < 0){
+    error("CLIENT: ERROR opening socket");
+  }
+
+  // Set up the server address struct
+  setupAddressStruct(&serverAddress, port, host);
+
+  // Connect to server
+  if (connect(socketFD, 
 							(struct sockaddr*)&serverAddress, 
-							sizeof(serverAddress)) < 0) {
-		error("client: error connecting");
-	}
+							sizeof(serverAddress)) < 0){
+    error("CLIENT: ERROR connecting");
+  }
 
-	printf("CLIENT: Enter text to send to the server: ");
-	memset(buffer, '\0', sizeof(buffer));
-	fgets(buffer, sizeof(buffer) - 1, stdin);
-	buffer[strcspn(buffer, "\n")] = '\0';
+  // Get input message from user
+  //printf("CLIENT: Enter text to send to the server, and then hit enter: ");
 
-	charsWritten = send(clientFD, buffer, strlen(buffer), 0);
-	if (charsWritten < 0) {
-		error("CLIENT: ERROR writing to socket");
-	}
+  // Clear out the buffer array
+  //memset(buffer, '\0', sizeof(buffer));
 
-	if (charsWritten < strlen(buffer)) {
-		printf("CLIENT: WARNING: Not all data written to socket\n");
-	}
+  // Get input from the user, trunc to buffer - 1 chars, leaving \0
+  //fgets(buffer, sizeof(buffer) - 1, stdin);
+  // Remove the trailing \n that fgets adds
+  //buffer[strcspn(buffer, "\n")] = '\0'; 
 
-	memset(buffer, '\0', sizeof(buffer));
+  // Send the plain_key_message to server
+  charsWritten = send(socketFD, 
+											plain_key_message, 
+											strlen(plain_key_message), 0); 
 
-	charsRead = recv(clientFD, buffer, sizeof(buffer) - 1, 0);
-	if (charsRead < 0) {
-		error("CLIENT: ERROR reading from socket");
-	}
+  if (charsWritten < 0){
+    error("CLIENT: ERROR writing to socket");
+  }
+	
+  if (charsWritten < strlen(buffer)){
+    printf("CLIENT: WARNING: Not all data written to socket!\n");
+  }
 
-	printf("CLIENT: recvd this \"%s\"\n", buffer);
+  // Get return message from server
+  // Clear out the buffer again for reuse
+  memset(buffer, '\0', sizeof(buffer));
+  // Read data from the socket, leaving \0 at end
+  charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
+  if (charsRead < 0){
+    error("CLIENT: ERROR reading from socket");
+  }
+  printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
 
-	close(clientFD);
-
-	return 0;
+  // Close the socket
+  close(socketFD); 
+  return 0;
 }
