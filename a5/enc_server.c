@@ -29,7 +29,7 @@ char* parseText(char* buf) {
 	// the length of the message will be one less due
 	// to the ending # character. reset i and create the
 	// message. ugly way to do it but whatever
-	str = calloc(i - 2, sizeof(char));
+	str = calloc(i - 4, sizeof(char));
 	i = 4;		
 	ch = ' ';
 	while (ch != '#') {
@@ -40,6 +40,7 @@ char* parseText(char* buf) {
 	}
 	str[j-1] = '\0';
 	str[j] = '\0';
+	printf("parseText: %s\n", str);
 	return str;
 }
 
@@ -57,11 +58,6 @@ char* parseKey(char* buf) {
 // Checks the prefix to ensure that the enc_client
 // is connecting to the enc_server. dec_client
 // must not be able to connect.
-// if enc_ is found, check the position.
-// this is probably overkill but if the needle
-// is anywhere else besides the beginning of the
-// str, the message is not valid. the length of 
-// p should be equal to the length of str.
 char* checkPrefix(const char* str) {
 	char needle[] = "enc_";
 	char* p;
@@ -78,20 +74,12 @@ void mod27(char ch) {
 	printf("%c", ch);
 }
 
-// create a cipher by using a mod 27 and return
-// it.
 // If the character is not within the valid 
 // range of [65, 90] or 32 for the space character
 // then stop processing and return null
 void createCipher(char* msg, char* key) {
 	int c;
-	printf("in mod27 %i\n", strlen(msg));
-	printf("msgFUCJK: ");
-	for (int i = 0; i < strlen(msg); i++) {
-		printf("%i", msg[i]);
-		//mod27(msg[i]);	
-	}
-	// if the message isnt from enc_client
+	printf("in mod27:: %s\n", msg);
 	//return NULL;
 }
 
