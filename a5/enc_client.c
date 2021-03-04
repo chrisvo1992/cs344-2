@@ -50,6 +50,8 @@ void setupAddressStruct(struct sockaddr_in* address,
 int main(int argc, char *argv[]) {
   int socketFD, charsWritten, charsRead;
 	int c;
+	char* enc = calloc(5, sizeof(char));
+	strcpy(enc, "enc_\0");
 	char* plainText;
 	char* keyText;
 	char* plain_key_message;
@@ -87,13 +89,12 @@ int main(int argc, char *argv[]) {
 	// for file data
 	stat(argv[1], &plainTextSTAT);
 	len_plain = plainTextSTAT.st_size;
-	// adding 1 to have space for ## at the end of plain text
-	plainText = calloc(len_plain + 1, sizeof(char));
+	// space for # at the end of plain text
+	plainText = calloc(len_plain, sizeof(char));
 
 	stat(argv[2], &keyTextSTAT);
 	len_key = keyTextSTAT.st_size;
 	keyText = calloc(len_key, sizeof(char));
-	printf("plain text file\n");
 
 	// the length of the plaintext file cannot be
 	// greater than the provided key
@@ -107,12 +108,10 @@ int main(int argc, char *argv[]) {
 		c = fgetc(plainTextFD);	
 		plainText[i] = c;	
 		i++;
-		printf("%c", c);
 	}
 	plainText[i-2] = '#';
-	plainText[i-1] = '#';
+	plainText[i-1] = '\0';
 	plainText[i] = '\0';
-	printf("plain text: %s", plainText);
 
 
 	i = 0;
@@ -124,14 +123,21 @@ int main(int argc, char *argv[]) {
 	}
 	keyText[i-1] = '\0';
 	keyText[i] = '\0';
-	printf("key text: %s", keyText);
 
 	// concat the plain and key text for the message
-	plain_key_message = calloc(strlen(plainText) + strlen(keyText), 
-															sizeof(char));
-	strcpy(plain_key_message, plainText);
+	plain_key_message = calloc(strlen(enc)+1 
+														+ strlen(plainText) 
+														+ strlen(keyText), sizeof(char));
+
+	// prepend a message that indicates this message is sent from
+	// enc_client. idea provided by:
+	// https://piazza.com/class/kjc3320l16c2f1?cid=516
+	strcpy(plain_key_message, enc);
+	strcat(plain_key_message, plainText);
 	strcat(plain_key_message, keyText); 
-	printf("plain key message: %s\n", plain_key_message);
+	
+	printf("plain key message: %s", plain_key_message);
+	printf("\n");
 
   // Create a socket
   socketFD = socket(AF_INET, SOCK_STREAM, 0); 
