@@ -15,6 +15,17 @@
 * 3. Print the message received from the server and exit the program.
 */
 
+int checkCharacter(int ch) {
+	int valid = 0;
+	if (ch == 32 || ch == 10 || ch == EOF) {
+		valid = 1;
+	}
+	if (ch >= 65 && ch <= 90) {
+		valid = 1;
+	}
+	return valid;
+}
+
 // Error function used for reporting issues
 void error(const char *msg) { 
   perror(msg); 
@@ -55,6 +66,8 @@ int main(int argc, char *argv[]) {
 	char* plainText;
 	char* keyText;
 	char* plain_key_message;
+	// used for checking if the input is valid
+	int checkCH;
 	size_t i, len_plain, len_key;
 	struct stat plainTextSTAT;
 	struct stat keyTextSTAT;
@@ -62,7 +75,7 @@ int main(int argc, char *argv[]) {
 	FILE* keyTextFD;
 	int port = atoi(argv[3]);
   struct sockaddr_in serverAddress;
-  char buffer[256];
+  char buffer[4096];
 	char* host = "localhost\0"; 
 
   // Check usage & args
@@ -99,20 +112,24 @@ int main(int argc, char *argv[]) {
 	// the length of the plaintext file cannot be
 	// greater than the provided key
 	if (len_plain > len_key) {
-		printf("Length of plain text file is greater than the key\n");
+		fprintf(stderr, "Length of plain text file is greater than the key\n");
 		exit(1);	
 	}
 
 	i = 0;
 	while (c != EOF) {
 		c = fgetc(plainTextFD);	
-		plainText[i] = c;	
-		i++;
+		if (checkCharacter(c)) {
+			plainText[i] = c;	
+			i++;
+		} else {
+			fprintf(stderr, "BAD INPUT\n");
+			exit(1);
+		}	
 	}
 	plainText[i-2] = '#';
 	plainText[i-1] = '\0';
 	plainText[i] = '\0';
-
 
 	i = 0;
 	c = 0;
@@ -136,9 +153,6 @@ int main(int argc, char *argv[]) {
 	strcat(plain_key_message, plainText);
 	strcat(plain_key_message, keyText); 
 	
-	printf("plain key message: %s", plain_key_message);
-	printf("\n");
-
   // Create a socket
   socketFD = socket(AF_INET, SOCK_STREAM, 0); 
   if (socketFD < 0){
@@ -159,7 +173,7 @@ int main(int argc, char *argv[]) {
   //printf("CLIENT: Enter text to send to the server, and then hit enter: ");
 
   // Clear out the buffer array
-  //memset(buffer, '\0', sizeof(buffer));
+  memset(buffer, '\0', sizeof(buffer));
 
   // Get input from the user, trunc to buffer - 1 chars, leaving \0
   //fgets(buffer, sizeof(buffer) - 1, stdin);
@@ -187,7 +201,9 @@ int main(int argc, char *argv[]) {
   if (charsRead < 0){
     error("CLIENT: ERROR reading from socket");
   }
-  printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+  //printf("CLIENT: RECEIVED: \"%s\"\n", buffer);
+	fprintf(stdout, buffer);
+	printf("\n");
 
   // Close the socket
   close(socketFD); 
