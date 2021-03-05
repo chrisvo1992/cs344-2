@@ -87,6 +87,7 @@ int checkRange(char ch) {
 
 // perform the mod 27 on each valid character in 
 // the text and key.
+// mod 26 bc of A = 0, Z = 25
 char enc_mod27(char ch1, char ch2) {
 	int c1 = ch1;
 	int c2 = ch2;
@@ -95,10 +96,10 @@ char enc_mod27(char ch1, char ch2) {
 		c1 -= 65;
 	} else { return 32;}
 	c2 -= 65;
-	mod = (c1 + c2) % 27;
-	if (mod == 26) { mod = 0; }
-	//printf("(%i + %i) mod 27 = %i\n", c1, c2, mod);
-	//printf("(%c + %c) mod 27 = %c\n\n", c1+65, c2+65, mod+65);
+	mod = c1 + c2;
+	mod = mod % 26;
+	printf("(%i + %i) mod 26 = %i\n", c1, c2, mod);
+	printf("(%c + %c) mod 26 = %c\n\n", c1+65, c2+65, mod+65);
 	mod += 65;
 	return mod;
 }

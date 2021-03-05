@@ -62,7 +62,7 @@ char* parseKey(char* buf) {
 // is connecting to the enc_server. dec_client
 // must not be able to connect.
 char* checkPrefix(const char* str) {
-	char needle[] = "enc_";
+	char needle[] = "dec_";
 	char* p;
 	p = strstr(str, needle);
 	if (p && strlen(p) == strlen(str)) {
@@ -88,19 +88,23 @@ int checkRange(char ch) {
 
 // perform the mod 27 on each valid character in 
 // the text and key.
+// mod 26 bc of A = 0, Z = 25
 char dec_mod27(char ch1, char ch2) {
 	int c1 = ch1;
 	int c2 = ch2;
 	int mod;
 	if (c1 != 32) {
-		c1 += 65;
+		c1 -= 65;
 	} else { return 32;}
-	c2 += 65;
-	mod = (c1 - c2) % 27;
-	if (mod == 0) { mod = 26; }
-	printf("(%i + %i) mod 27 = %i\n", c1, c2, mod);
-	printf("(%c + %c) mod 27 = %c\n\n", c1-65, c2-65, mod-65);
-	mod -= 65;
+	c2 -= 65;
+	mod = (c1 - c2);
+	mod = mod % 26;
+	if (mod < 0) {
+		mod = mod + 26;
+	}
+	printf("(%i - %i) mod 26 = %i\n", c1, c2, mod);
+	printf("(%c - %c) mod 26 = %c\n\n", c1+65, c2+65, mod+65);
+	mod += 65;
 	return mod;
 }
 
@@ -209,7 +213,10 @@ int main(int argc, char *argv[]){
 			key = parseKey(buffer);
 			response = readCipher(text, key);
 		} else {
-			fprintf(stderr, "");
+			fprintf(stderr, 
+							"Wrong Server, attempted port: %d", 
+							clientAddress.sin_port);
+			exit(2);
 		}
     // Send the ciphertext back to the client
     charsRead = send(connectingSocket, 
