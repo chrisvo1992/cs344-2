@@ -37,14 +37,20 @@ int main(int argc, char* argv[]) {
 	srand(time(NULL));
 
 	int length = atoi(argv[1]);
+	int val;
 
 	if (argc < 2) {
 		fprintf(stderr, "%s", "Not enough arguments\n");
 		exit(1);
 	}
-
+	// using 91 for the space character. if
+	// the key char == 91, assign it to space
+	// during encryption.
+	// (upper - lower + 1) + lower
 	for (int i = 0; i < length; i++) {
-		printf("%c", rand() % (90 - 65 + 1) + 65);	
+		val = (rand() % (91 - 65 + 1) + 65);
+		if (val == 91) { val = 32; }	
+		printf("%c", val);	
 	}
 	printf("\n");
 

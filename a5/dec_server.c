@@ -93,18 +93,24 @@ char dec_mod27(char ch1, char ch2) {
 	int c1 = ch1;
 	int c2 = ch2;
 	int mod;
-	if (c1 != 32) {
+	if (c1 == 32) {
+		c1 = 26;
+	} else {
 		c1 -= 65;
-	} else { return 32;}
-	c2 -= 65;
-	mod = (c1 - c2);
-	mod = mod % 26;
-	if (mod < 0) {
-		mod = mod + 26;
 	}
-	printf("(%i - %i) mod 26 = %i\n", c1, c2, mod);
-	printf("(%c - %c) mod 26 = %c\n\n", c1+65, c2+65, mod+65);
-	mod += 65;
+	if (c2 == 32) {
+		c2 = 26;
+	} else {
+		c2 -= 65;
+	}
+	mod = c1 - c2;
+	mod = mod % 27;
+	mod = (((c1 - c2) + 27) % 27) + 65;
+	if (mod == 91) {mod = 32; return mod;}
+	/*
+ 	printf("(%i - %i) mod 27 = %i, (%i,%c)\n", c1, c2, mod, 
+		(c1 - c2) + 27, (((c1 - c2) + 27) % 27) + 65);
+	*/
 	return mod;
 }
 
