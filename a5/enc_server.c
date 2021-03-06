@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#define MAX_CONN 5
 // Error function used for reporting issues
 void error(const char *msg) {
   perror(msg);
@@ -104,11 +105,9 @@ char enc_mod27(char ch1, char ch2) {
 	}
 	mod = c1 + c2;
 	mod = mod % 27;
-	printf("(%i + %i) mod 26 = %i\n", c1, c2, mod);
-	printf("(%c + %c) mod 26 = %c\n\n", c1+65, c2+65, mod+65);
+	//printf("(%i + %i) mod 26 = %i\n", c1, c2, mod);
+	//printf("(%c + %c) mod 26 = %c\n\n", c1+65, c2+65, mod+65);
 	mod += 65;
-	// for the space character
-	//if (mod == 91) { mod = 32; }
 	return mod;
 }
 
@@ -149,7 +148,9 @@ void setupAddressStruct(struct sockaddr_in* address,
 //	output: write backa  ciphertext to the enc_client that connected
 //				to the server
 int main(int argc, char *argv[]){
-  int connectingSocket, charsRead;
+  int connectingSocket, charsRead, pidCount = 0;
+	pid_t pid;
+	int status;
   char buffer[4096];
 	char* response = NULL;
 	char* text;
@@ -163,7 +164,7 @@ int main(int argc, char *argv[]){
     exit(1);
   } 
   
-  // Create the socket that will listen for connections
+  // Create the socket FD that will listen for connections
   int server = socket(AF_INET, SOCK_STREAM, 0);
   if (server < 0) {
     error("ERROR opening socket");
@@ -179,9 +180,24 @@ int main(int argc, char *argv[]){
     error("ERROR on binding");
   }
 
-  // Start listening for connetions. Allow up to 5 connections to queue up
+  // Start listening for connetions on FD. Allow up to 5 connections 
+  // to queue up. server is the parent socket
   listen(server, 5); 
-  
+
+	// create the 5 child processes before accepting incoming connections.
+	// Each new connection will utilize a child server process.
+	/*
+	for (int i = 0; i < 5; i++) {
+		process[i] = fork();
+		if (process[i] == 0) {
+			printf("[child] pid %d from [parent] pid %d\n", getpid(), getpid());
+			exit(0);
+		}
+		for (int i = 0; i < 5; i++) {
+			waitpid(process[i], &status, WNOHANG);
+		}
+	}	
+	*/
   // Accept a connection, blocking if one is not available until one connects
   while(1){
     // Accept the connection request which creates a connection socket
@@ -192,46 +208,58 @@ int main(int argc, char *argv[]){
       error("ERROR on accept");
     }
 
-		/*
-    printf("SERVER: Connected to client running at host %d port %d\n", 
-                          ntohs(clientAddress.sin_addr.s_addr),
-                          ntohs(clientAddress.sin_port));	
+		if ((pid = fork()) == 0) {
 
-		printf("SERVER - host: %d, port: %d\n",
-					ntohs(serverAddress.sin_addr.s_addr),
-					ntohs(serverAddress.sin_port));
-		*/
+			close(server);
 
-    // Get the message from the client and display it
-    memset(buffer, '\0', 4096);
-    // Read the client's message from the socket
-    charsRead = recv(connectingSocket, buffer, 4095, 0); 
-    if (charsRead < 0){
-      error("ERROR reading from socket");
-    }
-    //printf("SERVER - RECEIVED: %s", buffer);
-		fflush(stdout);
+			pidCount++;
 
-		// if the request is from the enc_client	
-		if (checkPrefix(buffer)) {
-			// get the message and key from the client request
-			text = parseText(buffer);
-			key = parseKey(buffer);
-			response = createCipher(text, key);
-		} else {
-			fprintf(stderr, "");
+			while (pidCount != MAX_CONN) {
+				printf("new process started: %d\n", getpid());
+				/*
+				printf("SERVER: Connected to client running at host %d port %d\n", 
+												ntohs(clientAddress.sin_addr.s_addr),
+												ntohs(clientAddress.sin_port));	
+
+				printf("SERVER - host: %d, port: %d\n",
+								ntohs(serverAddress.sin_addr.s_addr),
+								ntohs(serverAddress.sin_port));
+				*/
+				// Get the message from the client and display it
+				memset(buffer, '\0', 4096);
+				// Read the client's message from the socket
+				charsRead = recv(connectingSocket, buffer, 4096, 0); 
+				if (charsRead < 0){
+					error("ERROR reading from socket");
+				}
+				//printf("SERVER - RECEIVED: %s", buffer);
+				fflush(stdout);
+				// if the request is from the enc_client	
+				if (checkPrefix(buffer)) {
+				// get the message and key from the client request
+					text = parseText(buffer);
+					key = parseKey(buffer);
+					response = createCipher(text, key);
+				} else {
+					fprintf(stderr, "");
+				}
+				// Send the ciphertext back to the client
+				charsRead = send(connectingSocket, 
+												response, strlen(response), 0); 
+				if (charsRead < 0){
+					error("ERROR writing to socket");
+				}
+				// Close the connection socket for this client
+				//close(connectingSocket); 
+				// decrement the processCount	
+			}
+			close(connectingSocket);
+			pidCount--;
 		}
-    // Send the ciphertext back to the client
-    charsRead = send(connectingSocket, 
-                    response, strlen(response), 0); 
-
-    if (charsRead < 0){
-      error("ERROR writing to socket");
-    }
-    // Close the connection socket for this client
-    close(connectingSocket); 
+		//close(connectingSocket);
   }
+	//close(connectingSocket);
   // Close the listening socket
-  close(server); 
+  //close(server); 
   return 0;
 }
