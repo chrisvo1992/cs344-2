@@ -196,17 +196,22 @@ int main(int argc, char *argv[]) {
 
   // Get return message from server
   // Clear out the buffer again for reuse
-  memset(buffer, '\0', sizeof(buffer));
+  memset(buffer, '\0', 4096);
   // Read data from the socket, leaving \0 at end
   charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
   if (charsRead < 0){
     error("CLIENT: ERROR reading from socket");
   }
-  //printf("CLIENT: RECEIVED: \"%s\"\n", buffer);
-	fprintf(stdout, buffer);
-	printf("\n");
-
-  // Close the socket
-  close(socketFD); 
+	if (strcmp(buffer, "400") == 0) {
+		fprintf(stderr, "Wrong Server\n");
+		close(socketFD);
+		exit(2);
+	} else {
+		fprintf(stdout, buffer);
+		printf("\n");
+  	// Close the socket
+  	close(socketFD); 
+		exit(0);
+	}
   return 0;
 }

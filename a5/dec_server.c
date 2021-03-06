@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#define MAX_CONN 5
 // Error function used for reporting issues
 void error(const char *msg) {
   perror(msg);
@@ -61,14 +61,14 @@ char* parseKey(char* buf) {
 // Checks the prefix to ensure that the enc_client
 // is connecting to the enc_server. dec_client
 // must not be able to connect.
-char* checkPrefix(const char* str) {
+int checkPrefix(const char* str) {
 	char needle[] = "dec_";
 	char* p;
 	p = strstr(str, needle);
 	if (p && strlen(p) == strlen(str)) {
-		return p;
+		return 1;
 	} else {
-		p = NULL;
+		return 0;
 	} 
 }
 
@@ -151,8 +151,9 @@ void setupAddressStruct(struct sockaddr_in* address,
 //	output: write backa  ciphertext to the enc_client that connected
 //				to the server
 int main(int argc, char *argv[]){
-  int connectingSocket, charsRead;
-  char buffer[256];
+  int connectingSocket, charsRead, pidCount = 0;
+	pid_t pid;
+  char buffer[4096];
 	char* response = NULL;
 	char* text;
 	char* key;
@@ -194,47 +195,45 @@ int main(int argc, char *argv[]){
       error("ERROR on accept");
     }
 
-    printf("SERVER: Connected to client running at host %d port %d\n", 
-                          ntohs(clientAddress.sin_addr.s_addr),
-                          ntohs(clientAddress.sin_port));	
+		if ((pid = fork()) == 0) {
+			close(server);
+			pidCount++;
+			while (pidCount != MAX_CONN) {
 
-		printf("SERVER - host: %d, port: %d\n",
-					ntohs(serverAddress.sin_addr.s_addr),
-					ntohs(serverAddress.sin_port));
-
-    // Get the message from the client and display it
-    memset(buffer, '\0', 256);
-    // Read the client's message from the socket
-    charsRead = recv(connectingSocket, buffer, 255, 0); 
-    if (charsRead < 0){
-      error("ERROR reading from socket");
+				// Get the message from the client and display it
+				memset(buffer, '\0', 4096);
+				// Read the client's message from the socket
+				charsRead = recv(connectingSocket, buffer, 4096, 0); 
+				if (charsRead < 0){
+					error("ERROR reading from socket");
+				}
+				//printf("\n");
+				fflush(stdout);
+				// if the request is from the enc_client	
+				if (checkPrefix(buffer)) {
+					// get the message and key from the client request
+					text = parseText(buffer);
+					key = parseKey(buffer);
+					response = readCipher(text, key);
+					// Send the ciphertext back to the client
+					charsRead = send(connectingSocket, 
+												response, strlen(response), 0); 
+					memset(response, '\0', 4096);
+					if (charsRead < 0){
+						error("ERROR writing to socket");
+					}
+					pidCount--;
+    			close(connectingSocket); 
+				} else {
+					response = "400";
+					charsRead = send(connectingSocket, 
+												response, strlen(response), 0);
+					memset(response, '\0', 4096);
+					pidCount--;
+					close(connectingSocket);
+				}
+			}
     }
-    printf("DEC_SERVER - RECEIVED: %s", buffer);
-		printf("\n");
-
-		// if the request is from the enc_client	
-		if (checkPrefix(buffer)) {
-			// get the message and key from the client request
-			text = parseText(buffer);
-			key = parseKey(buffer);
-			response = readCipher(text, key);
-		} else {
-			fprintf(stderr, 
-							"Wrong Server, attempted port: %d", 
-							clientAddress.sin_port);
-			exit(2);
-		}
-    // Send the ciphertext back to the client
-    charsRead = send(connectingSocket, 
-                    response, strlen(response), 0); 
-
-    if (charsRead < 0){
-      error("ERROR writing to socket");
-    }
-    // Close the connection socket for this client
-    close(connectingSocket); 
   }
-  // Close the listening socket
-  close(server); 
   return 0;
 }

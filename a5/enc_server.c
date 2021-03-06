@@ -61,14 +61,14 @@ char* parseKey(char* buf) {
 // Checks the prefix to ensure that the enc_client
 // is connecting to the enc_server. dec_client
 // must not be able to connect.
-char* checkPrefix(const char* str) {
+int checkPrefix(const char* str) {
 	char needle[] = "enc_";
 	char* p;
 	p = strstr(str, needle);
 	if (p && strlen(p) == strlen(str)) {
-		return p;
+		return 1;
 	} else {
-		p = NULL;
+		return 0;
 	} 
 }
 
@@ -108,6 +108,7 @@ char enc_mod27(char ch1, char ch2) {
 	//printf("(%i + %i) mod 26 = %i\n", c1, c2, mod);
 	//printf("(%c + %c) mod 26 = %c\n\n", c1+65, c2+65, mod+65);
 	mod += 65;
+	if (mod == 91) { mod = 32; return mod; }
 	return mod;
 }
 
@@ -150,7 +151,6 @@ void setupAddressStruct(struct sockaddr_in* address,
 int main(int argc, char *argv[]){
   int connectingSocket, charsRead, pidCount = 0;
 	pid_t pid;
-	int status;
   char buffer[4096];
 	char* response = NULL;
 	char* text;
@@ -184,23 +184,7 @@ int main(int argc, char *argv[]){
   // to queue up. server is the parent socket
   listen(server, 5); 
 
-	// create the 5 child processes before accepting incoming connections.
-	// Each new connection will utilize a child server process.
-	/*
-	for (int i = 0; i < 5; i++) {
-		process[i] = fork();
-		if (process[i] == 0) {
-			printf("[child] pid %d from [parent] pid %d\n", getpid(), getpid());
-			exit(0);
-		}
-		for (int i = 0; i < 5; i++) {
-			waitpid(process[i], &status, WNOHANG);
-		}
-	}	
-	*/
-  // Accept a connection, blocking if one is not available until one connects
   while(1){
-    // Accept the connection request which creates a connection socket
     connectingSocket = accept(server, 
                 (struct sockaddr *)&clientAddress, 
                 &sizeOfClientInfo); 
@@ -215,16 +199,10 @@ int main(int argc, char *argv[]){
 			pidCount++;
 
 			while (pidCount != MAX_CONN) {
-				printf("new process started: %d\n", getpid());
 				/*
 				printf("SERVER: Connected to client running at host %d port %d\n", 
 												ntohs(clientAddress.sin_addr.s_addr),
-												ntohs(clientAddress.sin_port));	
-
-				printf("SERVER - host: %d, port: %d\n",
-								ntohs(serverAddress.sin_addr.s_addr),
-								ntohs(serverAddress.sin_port));
-				*/
+												ntohs(clientAddress.sin_port));	*/
 				// Get the message from the client and display it
 				memset(buffer, '\0', 4096);
 				// Read the client's message from the socket
@@ -232,34 +210,32 @@ int main(int argc, char *argv[]){
 				if (charsRead < 0){
 					error("ERROR reading from socket");
 				}
-				//printf("SERVER - RECEIVED: %s", buffer);
 				fflush(stdout);
 				// if the request is from the enc_client	
 				if (checkPrefix(buffer)) {
-				// get the message and key from the client request
+					// get the message and key from the client request
 					text = parseText(buffer);
 					key = parseKey(buffer);
 					response = createCipher(text, key);
-				} else {
-					fprintf(stderr, "");
-				}
-				// Send the ciphertext back to the client
-				charsRead = send(connectingSocket, 
+					// Send the ciphertext back to the client
+					charsRead = send(connectingSocket, 
 												response, strlen(response), 0); 
-				if (charsRead < 0){
-					error("ERROR writing to socket");
+					memset(response, '\0', 4096);
+					if (charsRead < 0){
+						error("ERROR writing to socket");
+					}
+					pidCount--;
+					close(connectingSocket);
+				} else {
+					response = "400";
+					charsRead = send(connectingSocket, 
+												response, strlen(response), 0);
+					memset(response, '\0', 4096);
+					pidCount--;
+					close(connectingSocket);
 				}
-				// Close the connection socket for this client
-				//close(connectingSocket); 
-				// decrement the processCount	
 			}
-			close(connectingSocket);
-			pidCount--;
 		}
-		//close(connectingSocket);
   }
-	//close(connectingSocket);
-  // Close the listening socket
-  //close(server); 
   return 0;
 }
