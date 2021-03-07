@@ -58,6 +58,16 @@ void setupAddressStruct(struct sockaddr_in* address,
         hostInfo->h_length);
 }
 
+// used to count the length of the message to be sent
+int digitCounter(int number) {
+	int count = 0;
+	while (number !=0) {
+		number /= 10;
+		++count;
+	}
+	return count;
+}
+
 int sendall(int s, char *buf, int *len) {
 	int total = 0;
 	int bytesleft = *len;
@@ -81,7 +91,11 @@ int main(int argc, char *argv[]) {
 	strcpy(dec, "dec_\0");
 	char* cipherText;
 	char* keyText;
-	char* cipher_key_message;
+	char* cipher_key;
+	char* message;
+	char* len;
+	int digitSize;
+	int messageSize;
 	// used for checking if the input is valid
 	int checkCH;
 	size_t i, len_cipher, len_key;
@@ -159,18 +173,33 @@ int main(int argc, char *argv[]) {
 	keyText[i] = '\0';
 	fclose(keyTextFD);
 
+	// create the message to be sent
+	messageSize = strlen(dec) + strlen(keyText) + strlen(cipherText);
+	digitSize = digitCounter(messageSize);
+	len = calloc(digitSize + 1, sizeof(char));
+	
+	//stackoverflow.com/questions/8257714/how-to-convert-an-int-to-string-in-c/
+	// len is the length that will be appended to the message, after
+	// the enc_ prefix
+	snprintf(len, digitSize + 1, "%d", messageSize);
+	len[strlen(len) - 1] = '\0';
+
+	message = calloc(messageSize, sizeof(char));
+	
 	// concat the cipher and key text for the message
-	cipher_key_message = calloc(strlen(dec)+1 
-														+ strlen(cipherText) 
-														+ strlen(keyText), sizeof(char));
+	cipher_key = calloc(strlen(dec)+1 
+											+ strlen(cipherText) 
+											+ strlen(keyText), sizeof(char));
 
 	// prepend a message that indicates this message is sent from
 	// dec_client. idea provided by:
 	// https://piazza.com/class/kjc3320l16c2f1?cid=516
-	strcpy(cipher_key_message, dec);
-	strcat(cipher_key_message, cipherText);
-	strcat(cipher_key_message, keyText); 
-	
+	strcpy(cipher_key, dec);
+	strcat(cipher_key, len);
+	strcat(cipher_key, cipherText);
+	strcat(cipher_key, keyText); 
+	strcpy(message, cipher_key);	
+
   // Create a socket
   socketFD = socket(AF_INET, SOCK_STREAM, 0); 
   if (socketFD < 0){
@@ -204,8 +233,9 @@ int main(int argc, char *argv[]) {
 											cipher_key_message, 
 											strlen(cipher_key_message), 0); 
 	*/
-	int size = strlen(cipher_key_message);
-	charsWritten = sendall(socketFD, cipher_key_message, &size);
+
+	int size = strlen(message);
+	charsWritten = sendall(socketFD, message, &size);
 
   if (charsWritten < 0){
     error("CLIENT: ERROR writing to socket");
@@ -224,6 +254,7 @@ int main(int argc, char *argv[]) {
     error("CLIENT: ERROR reading from socket");
   }
 	if (strcmp(buffer, "400") == 0) {
+		memset(buffer, '\0', sizeof(buffer));
 		fprintf(stderr, "Wrong Server\n");
 		close(socketFD);
 		exit(2);

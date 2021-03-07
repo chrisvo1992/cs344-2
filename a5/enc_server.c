@@ -14,24 +14,44 @@ void error(const char *msg) {
 } 
 
 // get message from the client request.
-// the flag separator is the # character 
-char* parseText(char* buf) {
+// the flag separator is the # character.
+// counts the number of digits received 
+char* parseText(char* buf, int* size) {
 	char* str = NULL;
+	int len = 0;
 	int i = 4;
 	int j = 0;
-	char ch;
-	// read past the enc_ part of the message by
-	// initializing i to 4
+	int k = 0;
+	char ch;;
+	int c = buf[i];
+
+	// get the prepended message length
+	while ((c >= 48) && (c <= 57)) {
+		k++;
+		len += (c - 48);
+		i++;
+		len *= 10;
+		c = buf[i];
+	}
+
+	if (k > 1) { len /= 10; }
+	// save the size in the argument size
+	*size = len;
+
+	// set the first char to a known valid value to 
+	// enter the loop
+	ch = buf[i];	
+
 	while (ch != '#') {
 		ch = buf[i];
 		i++;
 	}
 
 	// the length of the message will be one less due
-	// to the ending # character. reset i and create the
+	// to the ending # character. backtrack i and create the
 	// message. ugly way to do it but whatever
-	str = calloc(i - 3, sizeof(char));
-	i = 4;		
+	str = calloc(i - 3 - k, sizeof(char));
+	i = 4 + k;		
 	ch = ' ';
 	while (ch != '#') {
 		ch = buf[i];
@@ -39,8 +59,10 @@ char* parseText(char* buf) {
 		i++;
 		j++;
 	}
+	//printf("%s, %d\n", str ,j);
 	str[j-1] = '\0';
 	str[j] = '\0';
+	//printf("%s, %d\n", str ,j);
 	return str;
 }
 
@@ -55,6 +77,8 @@ char* parseKey(char* buf) {
 	// get rid of the leading # character
 	p++;
 	strcpy(str, p);
+	str[strlen(str) - 1] = '\0';
+	//printf("%s, %d\n", str, strlen(str));	
 	return str;
 }
 
@@ -164,7 +188,7 @@ int sendall(int s, char *buf, int *len) {
 //	output: write backa  ciphertext to the enc_client that connected
 //				to the server
 int main(int argc, char *argv[]){
-  int connectingSocket, charsRead, pidCount = 0;
+  int connectingSocket, charsRead, pidCount = 0, size, inSize;
 	pid_t pid;
 	int status;
   char buffer[4096];
@@ -222,17 +246,22 @@ int main(int argc, char *argv[]){
 												ntohs(clientAddress.sin_addr.s_addr),
 												ntohs(clientAddress.sin_port));	*/
 				// Get the message from the client and display it
-				memset(buffer, '\0', 4096);
+				memset(buffer, '\0', sizeof(buffer));
 				// Read the client's message from the socket
-				charsRead = recv(connectingSocket, buffer, 4096, 0); 
+				charsRead = recv(connectingSocket, buffer, sizeof(buffer), 0); 
+				//printf("chars read: %d\n", charsRead);
 				if (charsRead < 0){
 					error("ERROR reading from socket");
 				}
 				fflush(stdout);
 				// if the request is from the enc_client	
 				if (checkPrefix(buffer)) {
-					// get the message and key from the client request
-					text = parseText(buffer);
+					// get the message length, message, and key from the client request
+					text = parseText(buffer, &inSize);
+					//printf("message length: %d\n", inSize);
+					// assign the prepended message length and discard section
+					// of message
+					//
 					key = parseKey(buffer);
 					response = createCipher(text, key);
 					// Send the ciphertext back to the client
@@ -240,24 +269,26 @@ int main(int argc, char *argv[]){
 					charsRead = send(connectingSocket, 
 												response, strlen(response), 0); 
 					*/
-					int size = strlen(response);
+					size = strlen(response);
 					charsRead = sendall(connectingSocket, response, &size);
-					memset(response, '\0', 4096);
+					memset(response, '\0', sizeof(response));
 					if (charsRead < 0){
 						error("ERROR writing to socket");
 					}
 					pidCount--;
-					//close(connectingSocket);
 				} else {
 					response = "400";
-					charsRead = send(connectingSocket, 
-												response, strlen(response), 0);
-					memset(response, '\0', 4096);
+					size = strlen(response);
+					charsRead = sendall(connectingSocket, response, &size);
+					memset(response, '\0', sizeof(response));
+					if (charsRead < 0){
+						error("ERROR writing to socket");
+					}
 					pidCount--;
-					//close(connectingSocket);
 				}
 			}
 		}
+		//close(connectingSocket);
   }
 	//close(server);
   return 0;

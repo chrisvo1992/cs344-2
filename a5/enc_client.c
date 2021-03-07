@@ -57,6 +57,17 @@ void setupAddressStruct(struct sockaddr_in* address,
         hostInfo->h_length);
 }
 
+// used to count the length of the message to be sent
+int digitCounter(int number) {
+	int count = 0;
+	while (number !=0) {
+		number /= 10;
+		++count;
+	}
+	return count;
+}
+
+// sends all the data given
 int sendall(int s, char *buf, int *len) {
 	int total = 0;
 	int bytesleft = *len;
@@ -80,7 +91,13 @@ int main(int argc, char *argv[]) {
 	strcpy(enc, "enc_\0");
 	char* plainText;
 	char* keyText;
-	char* plain_key_message;
+	// concatenation of plaintext and key plus enc prefix
+	char* plain_key;
+	// the message to be sent
+	char* message;
+	char* len;
+	int digitSize;
+	int messageSize;
 	// used for checking if the input is valid
 	int checkCH;
 	size_t i, len_plain, len_key;
@@ -117,9 +134,9 @@ int main(int argc, char *argv[]) {
 	// for file data
 	stat(argv[1], &plainTextSTAT);
 	len_plain = plainTextSTAT.st_size;
-	// space for # at the end of plain text
+	// space for # at the end of plain text included
 	plainText = calloc(len_plain, sizeof(char));
-
+	// keyfile stat
 	stat(argv[2], &keyTextSTAT);
 	len_key = keyTextSTAT.st_size;
 	keyText = calloc(len_key, sizeof(char));
@@ -131,6 +148,7 @@ int main(int argc, char *argv[]) {
 		exit(1);	
 	}
 
+	// read the plaintext file
 	i = 0;
 	while (c != EOF) {
 		c = fgetc(plainTextFD);	
@@ -147,6 +165,7 @@ int main(int argc, char *argv[]) {
 	plainText[i] = '\0';
 	fclose(plainTextFD);
 
+	// reset and read key file
 	i = 0;
 	c = 0;
 	while (c != EOF) {
@@ -158,17 +177,38 @@ int main(int argc, char *argv[]) {
 	keyText[i] = '\0';
 	fclose(keyTextFD);
 
+	// create the message to be sent
+	messageSize = strlen(enc) + strlen(plainText) + strlen(keyText);
+	digitSize = digitCounter(messageSize);
+	len = calloc(digitSize + 1, sizeof(char));
+
+	//stackoverflow.com/questions/8257714/how-to-convert-an-int-to-string-in-c/
+	// len is the length that will be appended to the message, after
+	// the enc_ prefix
+	snprintf(len, digitSize + 1, "%d", messageSize);
+	//len[strlen(len) - 1] = '\0';
+
+	message = calloc(messageSize, sizeof(char));
+	/*
+	printf("len enc: %d, len plain: %d, len key: %d\n, ", 
+					strlen(enc), strlen(plainText), strlen(keyText));
+	*/
+
 	// concat the plain and key text for the message
-	plain_key_message = calloc(strlen(enc)+1 
+	plain_key = calloc(strlen(enc)
 														+ strlen(plainText) 
 														+ strlen(keyText), sizeof(char));
 
 	// prepend a message that indicates this message is sent from
 	// enc_client. idea provided by:
 	// https://piazza.com/class/kjc3320l16c2f1?cid=516
-	strcpy(plain_key_message, enc);
-	strcat(plain_key_message, plainText);
-	strcat(plain_key_message, keyText); 
+	strcpy(plain_key, enc);
+	strcat(plain_key, len);
+	strcat(plain_key, plainText);
+	strcat(plain_key, keyText); 
+	strcpy(message, plain_key);
+	//printf("plain key message length: %i\n", messageSize);
+	//printf("plain key message: %s\n", message);
 	
   // Create a socket
   socketFD = socket(AF_INET, SOCK_STREAM, 0); 
@@ -203,8 +243,9 @@ int main(int argc, char *argv[]) {
 											plain_key_message, 
 											strlen(plain_key_message), 0); 
 	*/
-	int size = strlen(plain_key_message);
-	charsWritten = sendall(socketFD, plain_key_message, &size);
+	int size = strlen(message);
+	//printf("message: %s\n", message);
+	charsWritten = sendall(socketFD, message, &size);
 
   if (charsWritten < 0){
     error("CLIENT: ERROR writing to socket");
@@ -216,13 +257,14 @@ int main(int argc, char *argv[]) {
 
   // Get return message from server
   // Clear out the buffer again for reuse
-  memset(buffer, '\0', 4096);
+  memset(buffer, '\0', sizeof(buffer));
   // Read data from the socket, leaving \0 at end
   charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
   if (charsRead < 0){
     error("CLIENT: ERROR reading from socket");
   }
 	if (strcmp(buffer, "400") == 0) {
+		memset(buffer, '\0', sizeof(buffer));	
 		fprintf(stderr, "Wrong Server\n");
 		close(socketFD);
 		exit(2);
@@ -233,5 +275,13 @@ int main(int argc, char *argv[]) {
   	close(socketFD); 
 		exit(0);
 	}
+	/*
+	free(plain_key);
+	free(message);
+	free(len);
+	free(keyText);
+	free(plainText);
+	free(enc);
+	*/
   return 0;
 }
