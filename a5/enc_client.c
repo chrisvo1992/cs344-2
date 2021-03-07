@@ -130,6 +130,7 @@ int main(int argc, char *argv[]) {
 	plainText[i-2] = '#';
 	plainText[i-1] = '\0';
 	plainText[i] = '\0';
+	fclose(plainTextFD);
 
 	i = 0;
 	c = 0;
@@ -140,6 +141,7 @@ int main(int argc, char *argv[]) {
 	}
 	keyText[i-1] = '\0';
 	keyText[i] = '\0';
+	fclose(keyTextFD);
 
 	// concat the plain and key text for the message
 	plain_key_message = calloc(strlen(enc)+1 

@@ -151,6 +151,7 @@ void setupAddressStruct(struct sockaddr_in* address,
 int main(int argc, char *argv[]){
   int connectingSocket, charsRead, pidCount = 0;
 	pid_t pid;
+	int status;
   char buffer[4096];
 	char* response = NULL;
 	char* text;
@@ -194,7 +195,9 @@ int main(int argc, char *argv[]){
 
 		if ((pid = fork()) == 0) {
 
-			close(server);
+			//close(server);
+
+			//waitpid(pid, &status, WNOHANG);
 
 			pidCount++;
 
@@ -237,5 +240,6 @@ int main(int argc, char *argv[]){
 			}
 		}
   }
+	close(server);
   return 0;
 }

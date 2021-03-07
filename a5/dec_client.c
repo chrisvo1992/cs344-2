@@ -131,6 +131,7 @@ int main(int argc, char *argv[]) {
 	cipherText[i-2] = '#';
 	cipherText[i-1] = '\0';
 	cipherText[i] = '\0';
+	fclose(cipherTextFD);
 
 	i = 0;
 	c = 0;
@@ -141,6 +142,7 @@ int main(int argc, char *argv[]) {
 	}
 	keyText[i-1] = '\0';
 	keyText[i] = '\0';
+	fclose(keyTextFD);
 
 	// concat the cipher and key text for the message
 	cipher_key_message = calloc(strlen(dec)+1 

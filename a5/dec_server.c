@@ -196,7 +196,7 @@ int main(int argc, char *argv[]){
     }
 
 		if ((pid = fork()) == 0) {
-			close(server);
+			//close(server);
 			pidCount++;
 			while (pidCount != MAX_CONN) {
 
@@ -235,5 +235,6 @@ int main(int argc, char *argv[]){
 			}
     }
   }
+	close(server);
   return 0;
 }
