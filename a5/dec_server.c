@@ -145,6 +145,21 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
+int sendall(int s, char *buf, int *len) {
+	int total = 0;
+	int bytesleft = *len;
+	int n;
+
+	while (total < *len) {
+		n = send(s, buf+total, bytesleft, 0);
+		if (n == -1) { break; }
+		total +=n;
+		bytesleft -= n;
+	}
+	*len = total;
+	return n == -1 ? -1 : 0;
+}
+
 // 	requirements: must ensure that the child process created is 
 // 	communicating with enc_client
 //	input: listening_port as argv[1]
@@ -216,25 +231,29 @@ int main(int argc, char *argv[]){
 					key = parseKey(buffer);
 					response = readCipher(text, key);
 					// Send the ciphertext back to the client
+					/*
 					charsRead = send(connectingSocket, 
 												response, strlen(response), 0); 
+					*/
+					int size = strlen(response);
+					charsRead = sendall(connectingSocket, response, &size);
 					memset(response, '\0', 4096);
 					if (charsRead < 0){
 						error("ERROR writing to socket");
 					}
 					pidCount--;
-    			close(connectingSocket); 
+    			//close(connectingSocket); 
 				} else {
 					response = "400";
 					charsRead = send(connectingSocket, 
 												response, strlen(response), 0);
 					memset(response, '\0', 4096);
 					pidCount--;
-					close(connectingSocket);
+					//close(connectingSocket);
 				}
 			}
     }
   }
-	close(server);
+	//close(server);
   return 0;
 }

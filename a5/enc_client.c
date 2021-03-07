@@ -57,6 +57,21 @@ void setupAddressStruct(struct sockaddr_in* address,
         hostInfo->h_length);
 }
 
+int sendall(int s, char *buf, int *len) {
+	int total = 0;
+	int bytesleft = *len;
+	int n;
+
+	while (total < *len) {
+		n = send(s, buf+total, bytesleft, 0);
+		if (n == -1) { break; }
+		total +=n;
+		bytesleft -= n;
+	}
+	*len = total;
+	return n == -1 ? -1 : 0;
+}
+
 // cli format: enc_client plaintext mykey port
 int main(int argc, char *argv[]) {
   int socketFD, charsWritten, charsRead;
@@ -183,9 +198,13 @@ int main(int argc, char *argv[]) {
   //buffer[strcspn(buffer, "\n")] = '\0'; 
 
   // Send the plain_key_message to server
+  /*
   charsWritten = send(socketFD, 
 											plain_key_message, 
 											strlen(plain_key_message), 0); 
+	*/
+	int size = strlen(plain_key_message);
+	charsWritten = sendall(socketFD, plain_key_message, &size);
 
   if (charsWritten < 0){
     error("CLIENT: ERROR writing to socket");
