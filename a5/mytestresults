@@ -24,7 +24,7 @@ Length of plain text file is greater than the key
 #-----------------------------------------
 #enc_client plaintext1 key70000 $encport
 #20 POINTS: Should return encrypted version of plaintext1
-XZXBUSWBMJFTODBHSRPFOEDDIREFVJATMIZM
+BAYAAEOBFUZPOTDSIKJLBKOWJCEQEBRGV LR
 
 #-----------------------------------------
 #enc_client plaintext1 key70000 $encport > ciphertext1
@@ -40,7 +40,7 @@ ciphertext1 exists!
 
 #-----------------------------------------
 #5 POINTS: ciphertext1 should look encrypted
-XZXBUSWBMJFTODBHSRPFOEDDIREFVJATMIZM
+BAYAAEOBFUZPOTDSIKJLBKOWJCEQEBRGV LR
 
 #-----------------------------------------
 #dec_client ciphertext1 key70000 $encport
@@ -70,112 +70,116 @@ plaintext1_a exists!
 #5 POINTS: Should be only one error about plaintext5 being bad
 Ten second sleep, your program must complete in this time
 BAD INPUT
-./p5testscript: line 123: 195652 Aborted                 (core dumped) ./enc_client plaintext3 key70000 $encport > ciphertext3
-total 2600
-drwxrwx---.  2 johnsal upg12645  1157 Mar  7 04:17 ./
+./p5testscript: line 123: 301630 Aborted                 (core dumped) ./enc_client plaintext3 key70000 $encport > ciphertext3
+total 2864
+drwxrwx---.  2 johnsal upg12645  1250 Mar  8 06:29 ./
 drwxrwx---. 10 johnsal upg12645   199 Feb 28 22:40 ../
--rw-rw----.  1 johnsal upg12645    40 Mar  7 04:17 ciphertext1
--rw-rw----.  1 johnsal upg12645   320 Mar  7 04:17 ciphertext2
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 ciphertext3
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 ciphertext4
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 ciphertext5
--rwxrwx---.  1 johnsal upg12645 17112 Mar  7 04:17 client
+-rw-rw----.  1 johnsal upg12645   137 Mar  7 21:50 a5.sh
+-rw-rw----.  1 johnsal upg12645    37 Mar  8 06:29 ciphertext1
+-rw-rw----.  1 johnsal upg12645   317 Mar  8 06:29 ciphertext2
+-rw-rw----.  1 johnsal upg12645     0 Mar  8 06:29 ciphertext3
+-rw-rw----.  1 johnsal upg12645     0 Mar  8 06:29 ciphertext4
+-rw-rw----.  1 johnsal upg12645     0 Mar  8 06:29 ciphertext5
+-rwxrwx---.  1 johnsal upg12645 17112 Mar  8 06:25 client
 -rw-rw----.  1 johnsal upg12645  3141 Mar  3 03:40 client.c
 -rw-rw----.  1 johnsal upg12645   289 Mar  3 08:36 compileall.sh
--rwxrwx---.  1 johnsal upg12645 19288 Mar  7 04:17 dec_client
--rw-rw----.  1 johnsal upg12645  6679 Mar  7 04:16 dec_client.c
--rw-r-----.  1 johnsal upg12645 16384 Mar  7 04:16 .dec_client.c.swp
--rwxrwx---.  1 johnsal upg12645 18592 Mar  7 04:17 dec_server
--rw-rw----.  1 johnsal upg12645  6567 Mar  7 02:54 dec_server.c
--rwxrwx---.  1 johnsal upg12645 19288 Mar  7 04:17 enc_client
--rw-rw----.  1 johnsal upg12645  7186 Mar  7 03:39 enc_client.c
--rwxrwx---.  1 johnsal upg12645 18624 Mar  7 04:17 enc_server
--rw-rw----.  1 johnsal upg12645  7049 Mar  7 04:02 enc_server.c
--rw-r-----.  1 johnsal upg12645 20480 Mar  7 04:08 .enc_server.c.swp
+-rwxrwx---.  1 johnsal upg12645 19264 Mar  8 06:25 dec_client
+-rw-rw----.  1 johnsal upg12645  6767 Mar  8 06:19 dec_client.c
+-rw-r-----.  1 johnsal upg12645 16384 Mar  8 06:19 .dec_client.c.swp
+-rwxrwx---.  1 johnsal upg12645 18664 Mar  8 06:25 dec_server
+-rw-rw----.  1 johnsal upg12645  6929 Mar  8 06:25 dec_server.c
+-rw-r-----.  1 johnsal upg12645 20480 Mar  8 06:25 .dec_server.c.swp
+-rwxrwx---.  1 johnsal upg12645 19240 Mar  8 06:25 enc_client
+-rw-rw----.  1 johnsal upg12645  7364 Mar  8 06:16 enc_client.c
+-rw-r-----.  1 johnsal upg12645 24576 Mar  8 06:16 .enc_client.c.swp
+-rwxrwx---.  1 johnsal upg12645 18880 Mar  8 06:25 enc_server
+-rw-rw----.  1 johnsal upg12645  7857 Mar  8 06:25 enc_server.c
+-rw-r-----.  1 johnsal upg12645 28672 Mar  8 06:25 .enc_server.c.swp
 -rw-rw----.  1 johnsal upg12645     4 Mar  1 03:10 .gitignore
 -rw-rw----.  1 johnsal upg12645     6 Mar  4 22:26 hello
 -rw-rw----.  1 johnsal upg12645    38 Mar  7 01:01 key1
 -rw-rw----.  1 johnsal upg12645   318 Mar  7 01:02 key2
--rw-rw----.  1 johnsal upg12645    21 Mar  7 04:17 key20
+-rw-rw----.  1 johnsal upg12645    21 Mar  8 06:29 key20
 -rw-rw----.  1 johnsal upg12645    18 Mar  7 01:02 key3
 -rw-rw----.  1 johnsal upg12645 69334 Mar  7 01:02 key4
 -rw-rw----.  1 johnsal upg12645    43 Mar  7 01:02 key5
--rw-rw----.  1 johnsal upg12645 70001 Mar  7 04:17 key70000
--rwxrwx---.  1 johnsal upg12645 11096 Mar  7 04:17 keygen
+-rw-rw----.  1 johnsal upg12645 70001 Mar  8 06:29 key70000
+-rwxrwx---.  1 johnsal upg12645 11096 Mar  8 06:25 keygen
 -rw-rw----.  1 johnsal upg12645  1024 Mar  6 04:21 keygen.c
 -rw-rw----.  1 johnsal upg12645   106 Feb 28 22:40 makefile
--rw-rw----.  1 johnsal upg12645  2557 Mar  7 04:17 mytestresults
+-rw-rw----.  1 johnsal upg12645  2557 Mar  8 06:29 mytestresults
 -rw-r-----.  1 johnsal upg12645 20480 Feb 28 22:40 .nfs00000000eabed50900001015
 -rwxrwx---.  1 johnsal upg12645 19312 Feb 28 22:40 .nfs00000000f0740b2c00001016
 -rwxrwxrwx.  1 johnsal upg12645  5388 Mar  6 02:51 p5testscript
--rw-rw----.  1 johnsal upg12645    37 Mar  7 01:32 plaintext1
+-rw-rw----.  1 johnsal upg12645    37 Mar  7 04:21 plaintext1
 -rw-rw----.  1 johnsal upg12645   317 Mar  1 01:50 plaintext2
 -rw-rw----.  1 johnsal upg12645    17 Mar  1 01:50 plaintext3
 -rw-rw----.  1 johnsal upg12645 69333 Mar  1 01:50 plaintext4
 -rw-rw----.  1 johnsal upg12645    42 Mar  1 01:50 plaintext5
--rwxrwx---.  1 johnsal upg12645 16712 Mar  7 04:17 server
+-rwxrwx---.  1 johnsal upg12645 16712 Mar  8 06:25 server
 -rw-rw----.  1 johnsal upg12645  2905 Mar  3 02:30 server.c
 
 #-----------------------------------------
 #15 POINTS: concurrent test of decryption - look for 4 plaintext#_a files that match the plaintext# files
 #Ten second sleep, your program must complete in this time
-BAD INPUT
-BAD INPUT
-./p5testscript: line 133: 195728 Aborted                 (core dumped) ./dec_client ciphertext3 key70000 $decport > plaintext3_a
-./p5testscript: line 133: 195729 Aborted                 (core dumped) ./dec_client ciphertext4 key70000 $decport > plaintext4_a
-total 2984
-drwxrwx---.  2 johnsal upg12645  1277 Mar  7 04:17 ./
+./p5testscript: line 133: 301727 Aborted                 (core dumped) ./dec_client ciphertext3 key70000 $decport > plaintext3_a
+./p5testscript: line 133: 301728 Aborted                 (core dumped) ./dec_client ciphertext4 key70000 $decport > plaintext4_a
+total 3248
+drwxrwx---.  2 johnsal upg12645  1370 Mar  8 06:29 ./
 drwxrwx---. 10 johnsal upg12645   199 Feb 28 22:40 ../
--rw-rw----.  1 johnsal upg12645    40 Mar  7 04:17 ciphertext1
--rw-rw----.  1 johnsal upg12645   320 Mar  7 04:17 ciphertext2
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 ciphertext3
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 ciphertext4
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 ciphertext5
--rwxrwx---.  1 johnsal upg12645 17112 Mar  7 04:17 client
+-rw-rw----.  1 johnsal upg12645   137 Mar  7 21:50 a5.sh
+-rw-rw----.  1 johnsal upg12645    37 Mar  8 06:29 ciphertext1
+-rw-rw----.  1 johnsal upg12645   317 Mar  8 06:29 ciphertext2
+-rw-rw----.  1 johnsal upg12645     0 Mar  8 06:29 ciphertext3
+-rw-rw----.  1 johnsal upg12645     0 Mar  8 06:29 ciphertext4
+-rw-rw----.  1 johnsal upg12645     0 Mar  8 06:29 ciphertext5
+-rwxrwx---.  1 johnsal upg12645 17112 Mar  8 06:25 client
 -rw-rw----.  1 johnsal upg12645  3141 Mar  3 03:40 client.c
 -rw-rw----.  1 johnsal upg12645   289 Mar  3 08:36 compileall.sh
--rwxrwx---.  1 johnsal upg12645 19288 Mar  7 04:17 dec_client
--rw-rw----.  1 johnsal upg12645  6679 Mar  7 04:16 dec_client.c
--rw-r-----.  1 johnsal upg12645 16384 Mar  7 04:16 .dec_client.c.swp
--rwxrwx---.  1 johnsal upg12645 18592 Mar  7 04:17 dec_server
--rw-rw----.  1 johnsal upg12645  6567 Mar  7 02:54 dec_server.c
--rwxrwx---.  1 johnsal upg12645 19288 Mar  7 04:17 enc_client
--rw-rw----.  1 johnsal upg12645  7186 Mar  7 03:39 enc_client.c
--rwxrwx---.  1 johnsal upg12645 18624 Mar  7 04:17 enc_server
--rw-rw----.  1 johnsal upg12645  7049 Mar  7 04:02 enc_server.c
--rw-r-----.  1 johnsal upg12645 20480 Mar  7 04:08 .enc_server.c.swp
+-rwxrwx---.  1 johnsal upg12645 19264 Mar  8 06:25 dec_client
+-rw-rw----.  1 johnsal upg12645  6767 Mar  8 06:19 dec_client.c
+-rw-r-----.  1 johnsal upg12645 16384 Mar  8 06:19 .dec_client.c.swp
+-rwxrwx---.  1 johnsal upg12645 18664 Mar  8 06:25 dec_server
+-rw-rw----.  1 johnsal upg12645  6929 Mar  8 06:25 dec_server.c
+-rw-r-----.  1 johnsal upg12645 20480 Mar  8 06:25 .dec_server.c.swp
+-rwxrwx---.  1 johnsal upg12645 19240 Mar  8 06:25 enc_client
+-rw-rw----.  1 johnsal upg12645  7364 Mar  8 06:16 enc_client.c
+-rw-r-----.  1 johnsal upg12645 24576 Mar  8 06:16 .enc_client.c.swp
+-rwxrwx---.  1 johnsal upg12645 18880 Mar  8 06:25 enc_server
+-rw-rw----.  1 johnsal upg12645  7857 Mar  8 06:25 enc_server.c
+-rw-r-----.  1 johnsal upg12645 28672 Mar  8 06:25 .enc_server.c.swp
 -rw-rw----.  1 johnsal upg12645     4 Mar  1 03:10 .gitignore
 -rw-rw----.  1 johnsal upg12645     6 Mar  4 22:26 hello
 -rw-rw----.  1 johnsal upg12645    38 Mar  7 01:01 key1
 -rw-rw----.  1 johnsal upg12645   318 Mar  7 01:02 key2
--rw-rw----.  1 johnsal upg12645    21 Mar  7 04:17 key20
+-rw-rw----.  1 johnsal upg12645    21 Mar  8 06:29 key20
 -rw-rw----.  1 johnsal upg12645    18 Mar  7 01:02 key3
 -rw-rw----.  1 johnsal upg12645 69334 Mar  7 01:02 key4
 -rw-rw----.  1 johnsal upg12645    43 Mar  7 01:02 key5
--rw-rw----.  1 johnsal upg12645 70001 Mar  7 04:17 key70000
--rwxrwx---.  1 johnsal upg12645 11096 Mar  7 04:17 keygen
+-rw-rw----.  1 johnsal upg12645 70001 Mar  8 06:29 key70000
+-rwxrwx---.  1 johnsal upg12645 11096 Mar  8 06:25 keygen
 -rw-rw----.  1 johnsal upg12645  1024 Mar  6 04:21 keygen.c
 -rw-rw----.  1 johnsal upg12645   106 Feb 28 22:40 makefile
--rw-rw----.  1 johnsal upg12645  5715 Mar  7 04:17 mytestresults
+-rw-rw----.  1 johnsal upg12645  5890 Mar  8 06:29 mytestresults
 -rw-r-----.  1 johnsal upg12645 20480 Feb 28 22:40 .nfs00000000eabed50900001015
 -rwxrwx---.  1 johnsal upg12645 19312 Feb 28 22:40 .nfs00000000f0740b2c00001016
 -rwxrwxrwx.  1 johnsal upg12645  5388 Mar  6 02:51 p5testscript
--rw-rw----.  1 johnsal upg12645    37 Mar  7 01:32 plaintext1
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 plaintext1_a
+-rw-rw----.  1 johnsal upg12645    37 Mar  7 04:21 plaintext1
+-rw-rw----.  1 johnsal upg12645    37 Mar  8 06:29 plaintext1_a
 -rw-rw----.  1 johnsal upg12645   317 Mar  1 01:50 plaintext2
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 plaintext2_a
+-rw-rw----.  1 johnsal upg12645   317 Mar  8 06:29 plaintext2_a
 -rw-rw----.  1 johnsal upg12645    17 Mar  1 01:50 plaintext3
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 plaintext3_a
+-rw-rw----.  1 johnsal upg12645     0 Mar  8 06:29 plaintext3_a
 -rw-rw----.  1 johnsal upg12645 69333 Mar  1 01:50 plaintext4
--rw-rw----.  1 johnsal upg12645     0 Mar  7 04:17 plaintext4_a
+-rw-rw----.  1 johnsal upg12645     0 Mar  8 06:29 plaintext4_a
 -rw-rw----.  1 johnsal upg12645    42 Mar  1 01:50 plaintext5
--rwxrwx---.  1 johnsal upg12645 16712 Mar  7 04:17 server
+-rwxrwx---.  1 johnsal upg12645 16712 Mar  8 06:25 server
 -rw-rw----.  1 johnsal upg12645  2905 Mar  3 02:30 server.c
 
 #-----------------------------------------
 #Cleaning up - ignore Operation Not Permitted errors
-./p5testscript: line 141: 195528 Terminated              ./dec_server $decport
-./p5testscript: line 142: 195653 Terminated              ./enc_client plaintext4 key70000 $encport > ciphertext4
-./p5testscript: line 143: 195527 Terminated              ./enc_server $encport
+./p5testscript: line 141: 301510 Terminated              ./dec_server $decport
+./p5testscript: line 142: 301631 Terminated              ./enc_client plaintext4 key70000 $encport > ciphertext4
+./p5testscript: line 143: 301509 Terminated              ./enc_server $encport
 
 #SCRIPT COMPLETE

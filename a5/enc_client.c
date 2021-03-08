@@ -72,7 +72,8 @@ int sendall(int s, char *buf, int *len) {
 	int total = 0;
 	int bytesleft = *len;
 	int n;
-
+	
+	//printf("total: %d\n", len);
 	while (total < *len) {
 		n = send(s, buf+total, bytesleft, 0);
 		if (n == -1) { break; }
@@ -119,14 +120,14 @@ int main(int argc, char *argv[]) {
 	// open the plaintext file
 	plainTextFD = fopen(argv[1], "r");
 	if (plainTextFD == NULL) {
-		perror("PlainTextFile");
+		fprintf(stderr,"PlainTextFile");
 		exit(1);
 	}
 
 	// open the keytext file
 	keyTextFD = fopen(argv[2], "r");	
 	if (keyTextFD == NULL) {
-		perror("KeyTextFile");
+		fprintf(stderr, "KeyTextFile");
 		exit(1);
 	}
 
@@ -213,7 +214,7 @@ int main(int argc, char *argv[]) {
   // Create a socket
   socketFD = socket(AF_INET, SOCK_STREAM, 0); 
   if (socketFD < 0){
-    error("CLIENT: ERROR opening socket");
+    fprintf(stderr, "CLIENT: ERROR opening socket");
   }
 
   // Set up the server address struct
@@ -223,7 +224,7 @@ int main(int argc, char *argv[]) {
   if (connect(socketFD, 
 							(struct sockaddr*)&serverAddress, 
 							sizeof(serverAddress)) < 0){
-    error("CLIENT: ERROR connecting");
+    fprintf(stderr,"CLIENT: ERROR connecting");
   }
 
   // Get input message from user
@@ -240,30 +241,32 @@ int main(int argc, char *argv[]) {
   // Send the plain_key_message to server
   /*
   charsWritten = send(socketFD, 
-											plain_key_message, 
-											strlen(plain_key_message), 0); 
-	*/
+											plain_key, 
+											strlen(plain_key), 0); 
+	*/	
+	///*
 	int size = strlen(message);
-	//printf("message: %s\n", message);
 	charsWritten = sendall(socketFD, message, &size);
-
+	//*/
   if (charsWritten < 0){
-    error("CLIENT: ERROR writing to socket");
+    fprintf(stderr,"CLIENT: ERROR writing to socket");
   }
 	
-  if (charsWritten < strlen(buffer)){
-    printf("CLIENT: WARNING: Not all data written to socket!\n");
+  if (charsWritten < strlen(buffer)) {
+    fprintf(stderr,"CLIENT: WARNING: Not all data written to socket!");
   }
-
+	//printf("\n");
   // Get return message from server
   // Clear out the buffer again for reuse
   memset(buffer, '\0', sizeof(buffer));
   // Read data from the socket, leaving \0 at end
-  charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
+  charsRead = recv(socketFD, buffer, sizeof(buffer), 0); 
   if (charsRead < 0){
-    error("CLIENT: ERROR reading from socket");
+    fprintf(stderr,"CLIENT: ERROR reading from socket");
   }
-	if (strcmp(buffer, "400") == 0) {
+	if ((strcmp(buffer, "400") == 0)) {
+		//printf("buffer: %s, len: %d, isTrue: %d\n", 
+		//				buffer, strlen(buffer), (strcmp(buffer, "400") == 0));
 		memset(buffer, '\0', sizeof(buffer));	
 		fprintf(stderr, "Wrong Server\n");
 		close(socketFD);

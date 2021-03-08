@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -187,6 +188,7 @@ int sendall(int s, char *buf, int *len) {
 //				to the server
 int main(int argc, char *argv[]){
   int connectingSocket, charsRead, pidCount = 0, size, inSize;
+	int status;
 	pid_t pid;
   char buffer[4096];
 	char* response = NULL;
@@ -204,7 +206,7 @@ int main(int argc, char *argv[]){
   // Create the socket that will listen for connections
   int server = socket(AF_INET, SOCK_STREAM, 0);
   if (server < 0) {
-    error("ERROR opening socket");
+    fprintf(stderr,"ERROR opening socket");
   }
 
   // Set up the address struct for the server socket
@@ -214,40 +216,45 @@ int main(int argc, char *argv[]){
   if (bind(server, 
           (struct sockaddr *)&serverAddress, 
           sizeof(serverAddress)) < 0){
-    error("ERROR on binding");
+    fprintf(stderr,"ERROR on binding");
   }
 
   // Start listening for connetions. Allow up to 5 connections to queue up
   listen(server, 5); 
   
   // Accept a connection, blocking if one is not available until one connects
-  while(1){
+  while(1) {
     // Accept the connection request which creates a connection socket
     connectingSocket = accept(server, 
                 (struct sockaddr *)&clientAddress, 
                 &sizeOfClientInfo); 
     if (connectingSocket < 0){
-      error("ERROR on accept");
+      fprintf(stderr,"ERROR on accept");
     }
 
 		if ((pid = fork()) == 0) {
+
 			//close(server);
+			//waitpid(pid, &status, WNOHANG);
+
 			pidCount++;
-			while (pidCount != MAX_CONN) {
+				
+			while (1) {
+			//while (pidCount != MAX_CONN) {
 
 				// Get the message from the client and display it
 				memset(buffer, '\0', sizeof(buffer));
 				// Read the client's message from the socket
 				charsRead = recv(connectingSocket, buffer, sizeof(buffer), 0); 
 				if (charsRead < 0){
-					error("ERROR reading from socket");
+					//fprintf(stderr,"ERROR reading from socket");
 				}
-				//printf("\n");
-				fflush(stdout);
 				// if the request is from the enc_client	
 				if (checkPrefix(buffer)) {
 					// get the message and key from the client request
 					text = parseText(buffer, &inSize);
+					// assign the prepended message length and discard section
+					// of message
 					key = parseKey(buffer);
 					response = readCipher(text, key);
 					// Send the ciphertext back to the client
@@ -255,21 +262,28 @@ int main(int argc, char *argv[]){
 					charsRead = send(connectingSocket, 
 												response, strlen(response), 0); 
 					*/
+					fflush(stdout);
+					///*
 					size = strlen(response);
 					charsRead = sendall(connectingSocket, response, &size);
+					//close(connectingSocket);
+					//*/
 					memset(response, '\0', sizeof(response));
 					if (charsRead < 0){
-						error("ERROR writing to socket");
+						fprintf(stderr,"ERROR writing to socket");
 					}
 					pidCount--;
 				} else {
 					response = "400";
 					size = strlen(response);
-					charsRead = sendall(connectingSocket, response, &size);
+					charsRead = send(connectingSocket, response, strlen(response), 0);
 					memset(response, '\0', sizeof(response));
+					//close(connectingSocket);
 					pidCount--;
 				}
+				close(connectingSocket);
 			}
+			//close(connectingSocket);
     }
 		//close(connectingSocket);
   }

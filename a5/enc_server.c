@@ -78,6 +78,7 @@ char* parseKey(char* buf) {
 	p++;
 	strcpy(str, p);
 	str[strlen(str) - 1] = '\0';
+	str[strlen(str)] = '\0';
 	//printf("%s, %d\n", str, strlen(str));	
 	return str;
 }
@@ -89,9 +90,12 @@ int checkPrefix(const char* str) {
 	char needle[] = "enc_";
 	char* p;
 	p = strstr(str, needle);
+	//printf("p is: %s\n", p);
 	if (p && strlen(p) == strlen(str)) {
+		//printf("enc_ found\n");
 		return 1;
 	} else {
+		//printf("enc_not found\n");
 		return 0;
 	} 
 }
@@ -167,7 +171,7 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
-int sendall(int s, char *buf, int *len) {
+int recvall(int s, char *buf, int *len) {
 	int total = 0;
 	int bytesleft = *len;
 	int n;
@@ -179,6 +183,23 @@ int sendall(int s, char *buf, int *len) {
 		bytesleft -= n;
 	}
 	*len = total;
+	return n == -1 ? -1 : 0;
+}
+
+int sendall(int s, char *buf, int *len) {
+	int total = 0;
+	int bytesleft = *len;
+	int n;
+	//printf("len: %d\n", *len);
+	while (total < *len) {
+		n = send(s, buf+total, bytesleft, 0);
+		//printf("n: %d\n", n);
+		if (n == -1) { break; }
+		total +=n;
+		bytesleft -= n;
+	}
+	*len = total;
+	//printf("return n: %d\n", n);
 	return n == -1 ? -1 : 0;
 }
 
@@ -207,7 +228,8 @@ int main(int argc, char *argv[]){
   // Create the socket FD that will listen for connections
   int server = socket(AF_INET, SOCK_STREAM, 0);
   if (server < 0) {
-    error("ERROR opening socket");
+    fprintf(stderr,"ERROR opening socket");
+		exit(1);
   }
 
   // Set up the address struct for the server socket
@@ -217,7 +239,7 @@ int main(int argc, char *argv[]){
   if (bind(server, 
           (struct sockaddr *)&serverAddress, 
           sizeof(serverAddress)) < 0){
-    error("ERROR on binding");
+    fprintf(stderr, "ERROR on binding");
   }
 
   // Start listening for connetions on FD. Allow up to 5 connections 
@@ -229,7 +251,8 @@ int main(int argc, char *argv[]){
                 (struct sockaddr *)&clientAddress, 
                 &sizeOfClientInfo); 
     if (connectingSocket < 0){
-      error("ERROR on accept");
+      fprintf(stderr,"ERROR on accept");
+			exit(1);
     }
 
 		if ((pid = fork()) == 0) {
@@ -239,8 +262,10 @@ int main(int argc, char *argv[]){
 			//waitpid(pid, &status, WNOHANG);
 
 			pidCount++;
-
-			while (pidCount != MAX_CONN) {
+			
+			while (1) {
+			//while (pidCount != MAX_CONN) {
+				//printf("pidCount: %d\n",pidCount);
 				/*
 				printf("SERVER: Connected to client running at host %d port %d\n", 
 												ntohs(clientAddress.sin_addr.s_addr),
@@ -249,47 +274,53 @@ int main(int argc, char *argv[]){
 				memset(buffer, '\0', sizeof(buffer));
 				// Read the client's message from the socket
 				charsRead = recv(connectingSocket, buffer, sizeof(buffer), 0); 
-				//printf("chars read: %d\n", charsRead);
+				//printf("chars read: %d, buffer: %s, len: %d\n", 
+				//				charsRead, buffer, strlen(buffer));
 				if (charsRead < 0){
-					error("ERROR reading from socket");
+					//fprintf(stderr, "ERROR reading from socket");
 				}
-				fflush(stdout);
 				// if the request is from the enc_client	
+				//printf("before checkPrefix: %s\n", buffer);
 				if (checkPrefix(buffer)) {
 					// get the message length, message, and key from the client request
 					text = parseText(buffer, &inSize);
-					//printf("message length: %d\n", inSize);
 					// assign the prepended message length and discard section
 					// of message
-					//
 					key = parseKey(buffer);
 					response = createCipher(text, key);
 					// Send the ciphertext back to the client
 					/*
+					//printf("server response: %s\n", response);
+			
 					charsRead = send(connectingSocket, 
 												response, strlen(response), 0); 
 					*/
+					fflush(stdout);
+					///*
 					size = strlen(response);
 					charsRead = sendall(connectingSocket, response, &size);
+					//close(connectingSocket);
+					//*/
 					memset(response, '\0', sizeof(response));
 					if (charsRead < 0){
-						error("ERROR writing to socket");
+						fprintf(stderr,"ERROR writing to socket");
 					}
 					pidCount--;
 				} else {
 					response = "400";
 					size = strlen(response);
-					charsRead = sendall(connectingSocket, response, &size);
+					charsRead = send(connectingSocket, response, strlen(response), 0);
+					//close(connectingSocket);
 					memset(response, '\0', sizeof(response));
-					if (charsRead < 0){
-						error("ERROR writing to socket");
-					}
 					pidCount--;
 				}
+				close(connectingSocket);	
 			}
+			//close(connectingSocket);
 		}
 		//close(connectingSocket);
   }
+	//close(connectingSocket);
 	//close(server);
   return 0;
 }

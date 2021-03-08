@@ -72,8 +72,9 @@ int sendall(int s, char *buf, int *len) {
 	int total = 0;
 	int bytesleft = *len;
 	int n;
-
+	int i = 0;
 	while (total < *len) {
+		i++;
 		n = send(s, buf+total, bytesleft, 0);
 		if (n == -1) { break; }
 		total +=n;
@@ -87,7 +88,7 @@ int sendall(int s, char *buf, int *len) {
 int main(int argc, char *argv[]) {
   int socketFD, charsWritten, charsRead;
 	int c;
-	char* dec = calloc(5, sizeof(char));
+	char* dec = calloc(6, sizeof(char));
 	strcpy(dec, "dec_\0");
 	char* cipherText;
 	char* keyText;
@@ -203,7 +204,7 @@ int main(int argc, char *argv[]) {
   // Create a socket
   socketFD = socket(AF_INET, SOCK_STREAM, 0); 
   if (socketFD < 0){
-    error("CLIENT: ERROR opening socket");
+    fprintf(stderr,"CLIENT: ERROR opening socket");
   }
 
   // Set up the server address struct
@@ -213,7 +214,7 @@ int main(int argc, char *argv[]) {
   if (connect(socketFD, 
 							(struct sockaddr*)&serverAddress, 
 							sizeof(serverAddress)) < 0){
-    error("CLIENT: ERROR connecting");
+    fprintf(stderr,"CLIENT: ERROR connecting");
   }
 
   // Get input message from user
@@ -230,28 +231,30 @@ int main(int argc, char *argv[]) {
   // Send the plain_key_message to server
   /*
   charsWritten = send(socketFD, 
-											cipher_key_message, 
-											strlen(cipher_key_message), 0); 
+											cipher_key, 
+											strlen(cipher_key), 0); 
 	*/
-
+	
+	///*
+	//fflush(stdout);
 	int size = strlen(message);
 	charsWritten = sendall(socketFD, message, &size);
-
+	//*/
   if (charsWritten < 0){
-    error("CLIENT: ERROR writing to socket");
+    fprintf(stderr,"CLIENT: ERROR writing to socket");
   }
 	
-  if (charsWritten < strlen(buffer)){
-    printf("CLIENT: WARNING: Not all data written to socket!\n");
+  if (charsWritten < strlen(buffer)) {
+    fprintf(stderr,"CLIENT: WARNING: Not all data written to socket!");
   }
-
+	//printf("\n");
   // Get return message from server
   // Clear out the buffer again for reuse
   memset(buffer, '\0', 4096);
   // Read data from the socket, leaving \0 at end
-  charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
+  charsRead = recv(socketFD, buffer, sizeof(buffer), 0); 
   if (charsRead < 0){
-    error("CLIENT: ERROR reading from socket");
+    fprintf(stderr,"CLIENT: ERROR reading from socket");
   }
 	if (strcmp(buffer, "400") == 0) {
 		memset(buffer, '\0', sizeof(buffer));
