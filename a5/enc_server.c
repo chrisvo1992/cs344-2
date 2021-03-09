@@ -263,8 +263,8 @@ int main(int argc, char *argv[]){
 
 			pidCount++;
 			
-			while (1) {
-			//while (pidCount != MAX_CONN) {
+			//while (1) {
+			while (pidCount != MAX_CONN) {
 				//printf("pidCount: %d\n",pidCount);
 				/*
 				printf("SERVER: Connected to client running at host %d port %d\n", 
@@ -276,9 +276,11 @@ int main(int argc, char *argv[]){
 				charsRead = recv(connectingSocket, buffer, sizeof(buffer), 0); 
 				//printf("chars read: %d, buffer: %s, len: %d\n", 
 				//				charsRead, buffer, strlen(buffer));
+
 				if (charsRead < 0){
 					//fprintf(stderr, "ERROR reading from socket");
 				}
+
 				// if the request is from the enc_client	
 				//printf("before checkPrefix: %s\n", buffer);
 				if (checkPrefix(buffer)) {
