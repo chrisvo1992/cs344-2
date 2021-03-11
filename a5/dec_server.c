@@ -239,8 +239,8 @@ int main(int argc, char *argv[]){
 
 			pidCount++;
 				
-			while (1) {
-			//while (pidCount != MAX_CONN) {
+			//while (1) {
+			while (pidCount != MAX_CONN) {
 
 				// Get the message from the client and display it
 				memset(buffer, '\0', sizeof(buffer));
