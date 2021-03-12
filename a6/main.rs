@@ -2,10 +2,9 @@
 use std::env;
 use std::thread;
 
-
 /*
-print the number of partitions and teh size of each partition
-@param vs A vector of vectors
+print the number of partitions and the size of each partition
+@param vs - A vector of vectors
 */
 fn print_partition_info(vs: &Vec<Vec<usize>>){
 	println!("Number of partitions = {}", vs.len());
@@ -52,6 +51,12 @@ fn partition_data_in_two(v: &Vec<usize>) -> Vec<Vec<usize>> {
 		x2.push(v[i]);
 	}
 	xs.push(x2);
+	
+	for i in 0..xs.len() {
+		for j in 0..xs[i].len() {
+			println!("xs[{}]: {}", i, xs[i][j]);	
+		}
+	}
 
 	xs
 }
@@ -122,20 +127,33 @@ fn main() {
 	// Change the following code to create 2 threads that run
 	// concurrently and each of which uses map_data() function
 	// to process one of the two partitions
+
+	// split xs into two vectors so there is uniqueness
+	// for each
+	let mut v1: Vec<usize> = Vec::new();
+	let mut v2: Vec<usize> = Vec::new();
+
+	for i in 0..xs[0].len() {
+		v1.push(xs[0][i]);
+	}
+	for i in 0..xs[1].len() {
+		v2.push(xs[1][i]);
+	}
 	
 	let t1 = thread::spawn(move || {
-		intermediate_sums.push(map_data(&xs[0]));
+		let res = map_data(&v1);			
+		res
 	});
-	
 	let t2 = thread::spawn(move || {
-		intermediate_sums.push(map_data(&xs[1]));
+		let res = map_data(&v2);
+		res
 	});
 
-	t1.join().unwrap();
-	t2.join().unwrap();
+	let r1 = t1.join().unwrap();
+	let r2 = t2.join().unwrap();
 
-	//intermediate_sums.push(map_data(&xs[0]));
-	//intermediate_sums.push(map_data(&xs[1]));
+	intermediate_sums.push(r1);
+	intermediate_sums.push(r2);		
 
 	// CHANGE CODE END: Don't change any code below this line until
 	// the next CHANGE CODE comment
@@ -160,8 +178,7 @@ fn main() {
 	6. Calls reduce_data to process the intermediate sums
 	7. Prints the final sum computed by reduce_data
 	*/	
-
-	partition_data(5, &intermediate_sums);
+	partition_data(num_partitions, &v);
 }
 
 ////
@@ -180,17 +197,31 @@ Partitions the data into a number of partitions such that
 @param v The data to be partitioned
 @return A vector that contains vectors of integers
 */
-fn partition_data(_num_partitions: usize, _v: &Vec<usize>) -> Vec<Vec<usize>> {
-	println!("Partition the data right hurr!!!!! {} {}", _num_partitions, 56);
-	/*
-	let partition_size = v.len() / num_partitions;
-	let mut tempV : Vec<Vec<usize>> = Vec::new();
-	let mut v1 : Vec<usize> = Vec::new();
-	let mut v2 : Vec<usize> = Vec::new();
-	for i in 0..num_partitions {
-		v1.push(v[i]);	
+fn partition_data(num_partitions: usize, v: &Vec<usize>) -> Vec<Vec<usize>> {
+	println!("Partition the data here {} {}", num_partitions, v.len());
+	let size = v.len() / num_partitions;
+	let remainder = v.len() % (size * num_partitions);
+	
+	println!("mod result {}", remainder);
+
+	// create unique vectors that will be used for each thread
+	// using the remainder, create full vectors
+	let mut vv : Vec<Vec<usize>> = Vec::new();	
+	let mut i = 0;
+	while i < v.len() {
+		let mut tv : Vec<usize> = Vec::new();
+		for j in 0..size {
+			tv.push(v[i+j]);	
+		}
+		vv.push(tv);
+		i += size;
+	}	
+	
+	for i in 0..vv.len() {
+		for j in 0..vv[i].len() {
+			println!("vv[{}]: {}", i, vv[i][j]);	
+		}
 	}
-	*/
-	let temp : Vec<Vec<usize>> = Vec::new();	
-	temp
+
+	vv	
 }
