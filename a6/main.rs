@@ -1,6 +1,7 @@
 // get arguments from command line
 use std::env;
 use std::thread;
+use std::sync::mpsc;
 
 /*
 print the number of partitions and the size of each partition
@@ -52,12 +53,6 @@ fn partition_data_in_two(v: &Vec<usize>) -> Vec<Vec<usize>> {
 	}
 	xs.push(x2);
 	
-	for i in 0..xs.len() {
-		for j in 0..xs[i].len() {
-			println!("xs[{}]: {}", i, xs[i][j]);	
-		}
-	}
-
 	xs
 }
 
@@ -129,7 +124,7 @@ fn main() {
 	// to process one of the two partitions
 
 	// split xs into two vectors so there is uniqueness
-	// for each
+	// for each thread input
 	let mut v1: Vec<usize> = Vec::new();
 	let mut v2: Vec<usize> = Vec::new();
 
@@ -140,6 +135,7 @@ fn main() {
 		v2.push(xs[1][i]);
 	}
 	
+	// create the two threads
 	let t1 = thread::spawn(move || {
 		let res = map_data(&v1);			
 		res
@@ -149,6 +145,7 @@ fn main() {
 		res
 	});
 
+	// accumulate the values returned from each thread
 	let r1 = t1.join().unwrap();
 	let r2 = t2.join().unwrap();
 
@@ -169,7 +166,7 @@ fn main() {
 	// CHANGE CODE: Add code that does the following
 	/*	
 	1. Calls partition_data to partition the data into equal partitions
-	2. Calls print_partition_into to print info in the partitions that 
+	2. Calls print_partition_info to print info in the partitions that 
 			have been created
 	3. Creates one thread per partition and uses each thread to 
 			concurrently process one partition
@@ -178,7 +175,31 @@ fn main() {
 	6. Calls reduce_data to process the intermediate sums
 	7. Prints the final sum computed by reduce_data
 	*/	
-	partition_data(num_partitions, &v);
+	let vx = partition_data(num_partitions, &v);
+	let mut sums : Vec<usize> = Vec::new();
+
+	print_partition_info(&vx);
+
+	// create enough threads to process each partition
+	let (tx, rx) = mpsc::channel();
+	let tx1 = tx.clone();
+	// send
+	thread::spawn(move || {
+		for x in vx {
+			let result = map_data(&x);
+			tx1.send(result).unwrap();
+		}
+		drop(tx);
+	});
+	// recv
+	for received in rx {
+		sums.push(received);
+	}
+
+	// accumulate the values from each thread
+	let total = reduce_data(&sums);
+	println!("Intermediate sums = {:?}", sums);
+	println!("Sum = {}", total);	
 }
 
 ////
@@ -198,30 +219,24 @@ Partitions the data into a number of partitions such that
 @return A vector that contains vectors of integers
 */
 fn partition_data(num_partitions: usize, v: &Vec<usize>) -> Vec<Vec<usize>> {
-	println!("Partition the data here {} {}", num_partitions, v.len());
-	let size = v.len() / num_partitions;
-	let remainder = v.len() % (size * num_partitions);
-	
-	println!("mod result {}", remainder);
-
-	// create unique vectors that will be used for each thread
-	// using the remainder, create full vectors
+	// create the container for the vector of vectors
 	let mut vv : Vec<Vec<usize>> = Vec::new();	
-	let mut i = 0;
-	while i < v.len() {
-		let mut tv : Vec<usize> = Vec::new();
-		for j in 0..size {
-			tv.push(v[i+j]);	
-		}
-		vv.push(tv);
-		i += size;
-	}	
-	
-	for i in 0..vv.len() {
-		for j in 0..vv[i].len() {
-			println!("vv[{}]: {}", i, vv[i][j]);	
-		}
+	let mut j = 0;
+	let mut pos = 0;
+
+	// create the number of partitions vectors used for each thread input
+	while j < num_partitions {
+		let nv : Vec<usize> = Vec::new();
+		vv.push(nv);	
+		j += 1;
 	}
+
+	// fill the vectors with the contents of v	
+	for i in 0..v.len() {
+		if pos == num_partitions { pos = 0; }
+		vv[pos].push(v[i]);
+		pos += 1;
+	}	
 
 	vv	
 }
