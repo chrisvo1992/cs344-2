@@ -123,34 +123,21 @@ fn main() {
 	// concurrently and each of which uses map_data() function
 	// to process one of the two partitions
 
-	// split xs into two vectors so there is uniqueness
-	// for each thread input
-	let mut v1: Vec<usize> = Vec::new();
-	let mut v2: Vec<usize> = Vec::new();
-
-	for i in 0..xs[0].len() {
-		v1.push(xs[0][i]);
-	}
-	for i in 0..xs[1].len() {
-		v2.push(xs[1][i]);
-	}
-	
-	// create the two threads
-	let t1 = thread::spawn(move || {
-		let res = map_data(&v1);			
-		res
+	// create enough threads to process each partition
+	let (tx, rx) = mpsc::channel();
+	let tx1 = tx.clone();
+	// send
+	thread::spawn(move || {
+		for x in xs {
+			let result = map_data(&x);
+			tx1.send(result).unwrap();
+		}
+		drop(tx);
 	});
-	let t2 = thread::spawn(move || {
-		let res = map_data(&v2);
-		res
-	});
-
-	// accumulate the values returned from each thread
-	let r1 = t1.join().unwrap();
-	let r2 = t2.join().unwrap();
-
-	intermediate_sums.push(r1);
-	intermediate_sums.push(r2);		
+	// recv
+	for received in rx {
+		intermediate_sums.push(received);
+	}
 
 	// CHANGE CODE END: Don't change any code below this line until
 	// the next CHANGE CODE comment
