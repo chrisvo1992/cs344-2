@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
 	FILE* keyTextFD;
 	int port = atoi(argv[3]);
   struct sockaddr_in serverAddress;
-  char buffer[4096];
+  char buffer[6933];
 	char* host = "localhost\0"; 
 
   // Check usage & args

@@ -190,7 +190,7 @@ int main(int argc, char *argv[]){
   int connectingSocket, charsRead, pidCount = 0, size, inSize;
 	int status;
 	pid_t pid;
-  char buffer[4096];
+  char buffer[69334];
 	char* response = NULL;
 	char* text;
 	char* key;

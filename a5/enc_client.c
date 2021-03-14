@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	FILE* keyTextFD;
 	int port = atoi(argv[3]);
   struct sockaddr_in serverAddress;
-  char buffer[4096];
+  char buffer[69334];
 	char* host = "localhost\0"; 
 
   // Check usage & args
@@ -246,6 +246,7 @@ int main(int argc, char *argv[]) {
 	*/	
 	///*
 	int size = strlen(message);
+	//printf("message: %s\n", message);
 	charsWritten = sendall(socketFD, message, &size);
 	//*/
   if (charsWritten < 0){
@@ -278,13 +279,13 @@ int main(int argc, char *argv[]) {
   	close(socketFD); 
 		exit(0);
 	}
-	/*
+	///*
 	free(plain_key);
 	free(message);
 	free(len);
 	free(keyText);
 	free(plainText);
 	free(enc);
-	*/
+	//*/
   return 0;
 }

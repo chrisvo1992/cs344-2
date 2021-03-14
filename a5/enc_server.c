@@ -171,21 +171,6 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
-int recvall(int s, char *buf, int *len) {
-	int total = 0;
-	int bytesleft = *len;
-	int n;
-
-	while (total < *len) {
-		n = send(s, buf+total, bytesleft, 0);
-		if (n == -1) { break; }
-		total +=n;
-		bytesleft -= n;
-	}
-	*len = total;
-	return n == -1 ? -1 : 0;
-}
-
 int sendall(int s, char *buf, int *len) {
 	int total = 0;
 	int bytesleft = *len;
@@ -212,7 +197,7 @@ int main(int argc, char *argv[]){
   int connectingSocket, charsRead, pidCount = 0, size, inSize;
 	pid_t pid;
 	int status;
-  char buffer[4096];
+  char buffer[69334];
 	char* response = NULL;
 	char* text;
 	char* key;
@@ -262,7 +247,7 @@ int main(int argc, char *argv[]){
 			//waitpid(pid, &status, WNOHANG);
 
 			pidCount++;
-			
+
 			//while (1) {
 			while (pidCount != MAX_CONN) {
 				//printf("pidCount: %d\n",pidCount);
@@ -274,6 +259,8 @@ int main(int argc, char *argv[]){
 				memset(buffer, '\0', sizeof(buffer));
 				// Read the client's message from the socket
 				charsRead = recv(connectingSocket, buffer, sizeof(buffer), 0); 
+				//printf("SVR rcvd: %s, charsRead: %d\n", buffer, charsRead);
+
 				//printf("chars read: %d, buffer: %s, len: %d\n", 
 				//				charsRead, buffer, strlen(buffer));
 
@@ -326,3 +313,4 @@ int main(int argc, char *argv[]){
 	//close(server);
   return 0;
 }
+
