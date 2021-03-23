@@ -1,0 +1,60 @@
+
+while the user remains in the shell:
+
+	commandList = read input from stdin;
+	
+	***if command list is blank, handle it***
+
+	while (command in commandList != NULL)
+	{
+		if (checkCommand(exit,status,cd) == command)
+		{
+			exit:	
+				kill all processes, then exit the shell.
+				no return status needed.
+				no background operation (no processing of &)
+
+			status:
+				print out the status of either the exit status
+				or the terminating signal of the last 
+				foreground process ran by smallsh.
+
+			cd:
+				takes at most one argument, which is the path
+				of a dir to change to. 
+				
+				if the directory does not exist, print an err
+				msg for the user.
+
+				if no args are given, change to the directory
+				specified in the HOME environmental variable
+		}
+		else 
+		{
+			construct the argument list from the array of 
+			pointers to null-terminated strings.
+
+			The parent process must monitor the status of 
+			these child processes.
+
+			{
+				if (last char in the command is == '&')
+				{
+					create a background process and add it to the 
+					linked list of background processes. 
+	
+					since control will be returned to the parent,
+					continue to check the status of the child processes
+					that were executed in the background
+				}
+				else
+				{
+					run the process in the foreground 
+				}
+
+				print the exit status when each process
+				is completed.	
+			}
+		}
+	}
+	
