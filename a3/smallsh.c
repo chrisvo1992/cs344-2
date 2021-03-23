@@ -11,16 +11,36 @@
 #define MAX_CHARS 2048
 #define MAX_ARGS 512
 
+struct Command {
+	char* val;
+	struct Command* next;
+};
 
 char* parseInput();
 void printShell();
+int isValid(char*);
+struct Command* createArgv(char*);
+struct Command* createCommandNode(char*);
+void printError();
 
 int main() 
 {
 	char* input = NULL;
+	struct Command* list = NULL;
 	while (1) {
 		printShell();	
 		input = parseInput();	
+		if (isValid(input)) {
+			list = createArgv(input);	
+			printf("list: ");
+			while (list != NULL) {
+				printf("%s ", list->val);
+				list = list->next;
+			}
+			printf("\n");
+		} else {
+			printError();
+		}	
 	}
 	return 0;
 }
@@ -37,10 +57,10 @@ char* parseInput() {
 
 	if ((lineCount < MAX_CHARS)) {
 		for (int i = 0; i < strlen(lineptr); i++) {
-			if (lineptr[i] == 32 && lineptr[i] != 13) { argc++; }			
+			if (lineptr[i] == 32) { argc++; }			
 		}
 		argc++;
-		printf("number of arguments: %d\n", argc);
+		printf("number of arguments: %d\n", (int)argc);
 		if (argc <= MAX_ARGS) {
 			return lineptr;
 		}
@@ -53,4 +73,46 @@ char* parseInput() {
 // separate function
 void printShell() {
 	printf(": ");
+}
+
+int isValid(char* line) {
+	if (line == NULL) {return 0;}
+	return 1;
+}
+
+struct Command* createCommandNode(char* str) {
+	struct Command* newCmd = (struct Command*)malloc(sizeof(struct Command));
+	newCmd->val = calloc(strlen(str) + 1, sizeof(char));
+	strcpy(newCmd->val, str);
+	newCmd->next = NULL;
+	return newCmd;
+}
+
+struct Command* createArgv(char* str) {
+	char* line = calloc(strlen(str) + 1, sizeof(char));
+	strcpy(line, str);
+	line[strlen(line)-1] = '\0';
+	struct Command* argv = NULL;
+	struct Command* temp = NULL;
+	struct Command* head = NULL;
+	struct Command* cmd = NULL;
+	char* saveptr = NULL;
+	char* token = strtok_r(line, " ", &saveptr);
+	head = createCommandNode(token);
+	argv = head;
+	token = strtok_r(NULL, " ", &saveptr);
+	while (token) {
+		temp = head;
+		cmd = createCommandNode(token);	
+		temp->next = cmd;
+		head = cmd;
+		cmd = NULL;
+		token = strtok_r(NULL, " ", &saveptr);
+	}
+	head->next = NULL;
+	return argv;
+}
+
+void printError() {
+	printf("Too many characters/arguments\n");
 }

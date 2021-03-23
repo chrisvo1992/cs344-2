@@ -5,3 +5,19 @@
 2. check that the given command line input is not greater
 	than 2048 characters and 512 arguments
 
+3. create the argument list.
+
+4. check if the command is built in
+	- if it is, run the built-in command, go to step 7
+	- if not, go to step 5
+
+5. check for redirection
+	- set the proper stdin and stdout paths
+
+6. check if the command should be run in the background
+	- if not, create the process
+	- if yes, set background to true and create process
+
+7. check for the SIGSTOP while the fg and bg processes
+	are running. child processes running in the fg will
+	ignore SIGSTOP
