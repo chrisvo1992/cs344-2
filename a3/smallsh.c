@@ -21,6 +21,7 @@ void printShell();
 int isValid(char*);
 struct Command* createArgv(char*);
 struct Command* createCommandNode(char*);
+int isBuiltIn(struct Command*);
 void printError();
 
 int main() 
@@ -32,12 +33,7 @@ int main()
 		input = parseInput();	
 		if (isValid(input)) {
 			list = createArgv(input);	
-			printf("list: ");
-			while (list != NULL) {
-				printf("%s ", list->val);
-				list = list->next;
-			}
-			printf("\n");
+
 		} else {
 			printError();
 		}	
@@ -60,7 +56,6 @@ char* parseInput() {
 			if (lineptr[i] == 32) { argc++; }			
 		}
 		argc++;
-		printf("number of arguments: %d\n", (int)argc);
 		if (argc <= MAX_ARGS) {
 			return lineptr;
 		}
@@ -78,6 +73,16 @@ void printShell() {
 int isValid(char* line) {
 	if (line == NULL) {return 0;}
 	return 1;
+}
+
+int isBuiltIn(struct Command* cmd) {
+	printf("list: ");
+	while (cmd != NULL) {
+		printf("%s ", cmd->val);
+		cmd = cmd->next;
+	}
+	printf("\n");			
+	return 0;
 }
 
 struct Command* createCommandNode(char* str) {
