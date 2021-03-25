@@ -24,6 +24,9 @@ struct Command* createCommandNode(char*);
 int isBuiltIn(struct Command*);
 void* processCommand(int, struct Command*);
 void runBuiltIn(int);
+char* checkVarExp(char*);
+char* expandVariable(char*, char*);
+char* pid_to_string();
 void checkRedirection(struct Command*);
 void printError();
 
@@ -116,12 +119,76 @@ void runBuiltIn(int type) {
 	}
 }
 
+// returns the location of '$$' in str found in 
+// the list of command line arguments
+char* checkVarExp(char* str) {
+	char* s = strstr(str, "$$");
+	if (s) {
+		return s;
+	}	
+	return NULL;	
+}
+
+// concats the strings preceding and following the '$$'
+// found in tkn
+char* expandVariable(char* tkn, char* loc) {
+	int len = 0;	
+	int i = 0;
+	char c = tkn[len];
+	char* str1 = NULL;
+	char* str2 = NULL;
+	char* pid = pid_to_string();
+	char* str = NULL;
+	while (c != '$') {
+		len++;
+		c = tkn[len];	
+	}
+	str1 = (char*)calloc(len + 1, sizeof(char));
+	str2 = (char*)calloc(strlen(tkn) + 1, sizeof(char));
+	strncpy(str1, tkn, len);
+
+	// get the string following '$$'
+	len += 2;
+	while (len < strlen(tkn)) {
+		str2[i] = tkn[len];
+		i++;
+		len++;	
+	}
+	str2[i] = '\0';
+
+	// concat all three strings
+	str = (char*)calloc(strlen(str1) + 
+											strlen(str2) + 
+											strlen(pid) + 1, sizeof(char));	
+	strcat(str, str1);
+	strcat(str, pid);
+	strcat(str, str2);
+	return str;
+}
+
+// converts a current pid to a string
+char* pid_to_string() {
+	char* str = NULL; 
+	pid_t pid = getpid();
+	size_t digit = pid, rem = 0, num = digit, len = 0;
+
+	if (pid > 0) {
+		while (digit != 0) {
+			len++;
+			digit /= 10;
+		}
+		str = (char*)calloc(len + 1, sizeof(char));
+		for (int i = 0; i < len; i++) {
+			rem = num % 10;
+			num = num / 10; 
+			str[len - (i + 1)] = rem + '0';	
+		}
+	}
+	return str;
+}
+
 void checkRedirection(struct Command *list) {
 	printf("check for redirection\n");
-	while (list != NULL) {
-		printf("%s ",list->val);
-		list = list->next;
-	}
 }
 
 struct Command* createCommandNode(char* str) {
@@ -133,6 +200,8 @@ struct Command* createCommandNode(char* str) {
 }
 
 struct Command* createArgv(char* str) {
+	char* expansion_loc;
+	char* pid_str = NULL;
 	char* line = calloc(strlen(str) + 1, sizeof(char));
 	strcpy(line, str);
 	line[strlen(line)-1] = '\0';
@@ -146,6 +215,17 @@ struct Command* createArgv(char* str) {
 	argv = head;
 	token = strtok_r(NULL, " ", &saveptr);
 	while (token) {
+		expansion_loc	= checkVarExp(token);		
+		// replace the token with the pid, converted to a string
+		if (expansion_loc != NULL){
+			pid_str = expandVariable(token, expansion_loc);
+			printf("token was: %s\n", token);
+			memset(token, '\0', strlen(token));
+			memcpy(token,pid_str, strlen(pid_str)); 
+			strcpy(token, pid_str);
+			token[strlen(token)] = '\0';
+			printf("token is now: %s\n", token);
+		} 
 		temp = head;
 		cmd = createCommandNode(token);	
 		temp->next = cmd;
