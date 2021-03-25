@@ -22,6 +22,9 @@ int isValid(char*);
 struct Command* createArgv(char*);
 struct Command* createCommandNode(char*);
 int isBuiltIn(struct Command*);
+void* processCommand(int, struct Command*);
+void runBuiltIn(int);
+void checkRedirection(struct Command*);
 void printError();
 
 int main() 
@@ -33,7 +36,7 @@ int main()
 		input = parseInput();	
 		if (isValid(input)) {
 			list = createArgv(input);	
-
+			processCommand(isBuiltIn(list), list);
 		} else {
 			printError();
 		}	
@@ -75,14 +78,50 @@ int isValid(char* line) {
 	return 1;
 }
 
-int isBuiltIn(struct Command* cmd) {
-	printf("list: ");
-	while (cmd != NULL) {
-		printf("%s ", cmd->val);
-		cmd = cmd->next;
+void* processCommand(int builtIn, struct Command* cmd) {
+	if (builtIn) {
+		runBuiltIn(builtIn);
+		return NULL;
 	}
-	printf("\n");			
+	checkRedirection(cmd);
+	return NULL;
+}
+
+int isBuiltIn(struct Command* cmd) {
+	if (strcmp(cmd->val, "exit") == 0) {
+		return 1;
+	}	
+	if (strcmp(cmd->val, "status") == 0) {
+		return 2;
+	}	
+	if (strcmp(cmd->val, "cd") == 0) {
+		return 3;
+	}	
 	return 0;
+}
+
+void runBuiltIn(int type) {
+	switch (type) {
+		case 1:
+			printf("exit\n");
+		break;
+		case 2:
+			printf("status\n");
+		break;
+		case 3:
+			printf("cd\n");
+		break;
+		default:
+		break;
+	}
+}
+
+void checkRedirection(struct Command *list) {
+	printf("check for redirection\n");
+	while (list != NULL) {
+		printf("%s ",list->val);
+		list = list->next;
+	}
 }
 
 struct Command* createCommandNode(char* str) {
