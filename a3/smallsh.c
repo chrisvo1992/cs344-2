@@ -23,9 +23,9 @@ struct Command* createArgv(char*);
 struct Command* createCommandNode(char*);
 int isBuiltIn(struct Command*);
 void* processCommand(int, struct Command*);
-void runBuiltIn(int);
+void runBuiltIn(int, struct Command*);
 char* checkVarExp(char*);
-char* expandVariable(char*, char*);
+char* expandVariable(char*);
 char* pid_to_string();
 void checkRedirection(struct Command*);
 void printError();
@@ -83,7 +83,7 @@ int isValid(char* line) {
 
 void* processCommand(int builtIn, struct Command* cmd) {
 	if (builtIn) {
-		runBuiltIn(builtIn);
+		runBuiltIn(builtIn, cmd);
 		return NULL;
 	}
 	checkRedirection(cmd);
@@ -94,25 +94,43 @@ int isBuiltIn(struct Command* cmd) {
 	if (strcmp(cmd->val, "exit") == 0) {
 		return 1;
 	}	
-	if (strcmp(cmd->val, "status") == 0) {
+	if (strcmp(cmd->val, "cd") == 0) {
 		return 2;
 	}	
-	if (strcmp(cmd->val, "cd") == 0) {
+	if (strcmp(cmd->val, "status") == 0) {
 		return 3;
 	}	
 	return 0;
 }
 
-void runBuiltIn(int type) {
+void runBuiltIn(int type, struct Command* list) {
+	char* home = getenv("HOME");
+	char* temp = NULL;
+	struct Command* head = list;
+
 	switch (type) {
 		case 1:
 			printf("exit\n");
+			exit(0);
 		break;
 		case 2:
-			printf("status\n");
+			printf("%s\n", head->val);
+			if (head->next == NULL) {
+				if (chdir(home) < 0) {
+					perror("cd");
+				}
+				temp = get_current_dir_name();
+				printf("current dir: %s\n", temp);
+			} else {
+				if (chdir(head->next->val) < 0) { 
+					perror(head->next->val);
+				}
+				temp = get_current_dir_name();
+				printf("current dir: %s\n", temp);
+			}	
 		break;
 		case 3:
-			printf("cd\n");
+			printf("status\n");
 		break;
 		default:
 		break;
@@ -131,7 +149,7 @@ char* checkVarExp(char* str) {
 
 // concats the strings preceding and following the '$$'
 // found in tkn
-char* expandVariable(char* tkn, char* loc) {
+char* expandVariable(char* tkn) {
 	int len = 0;	
 	int i = 0;
 	char c = tkn[len];
@@ -143,8 +161,8 @@ char* expandVariable(char* tkn, char* loc) {
 		len++;
 		c = tkn[len];	
 	}
-	str1 = (char*)calloc(len + 1, sizeof(char));
-	str2 = (char*)calloc(strlen(tkn) + 1, sizeof(char));
+	str1 = calloc(len + 1, sizeof(char));
+	str2 = calloc(strlen(tkn) + 1, sizeof(char));
 	strncpy(str1, tkn, len);
 
 	// get the string following '$$'
@@ -157,12 +175,17 @@ char* expandVariable(char* tkn, char* loc) {
 	str2[i] = '\0';
 
 	// concat all three strings
-	str = (char*)calloc(strlen(str1) + 
+	str = calloc(strlen(str1) + 
 											strlen(str2) + 
 											strlen(pid) + 1, sizeof(char));	
 	strcat(str, str1);
 	strcat(str, pid);
 	strcat(str, str2);
+	str[strlen(str)] = '\0';
+	
+	free(str1);
+	free(pid);
+	free(str2);
 	return str;
 }
 
@@ -177,7 +200,7 @@ char* pid_to_string() {
 			len++;
 			digit /= 10;
 		}
-		str = (char*)calloc(len + 1, sizeof(char));
+		str = calloc(len + 1, sizeof(char));
 		for (int i = 0; i < len; i++) {
 			rem = num % 10;
 			num = num / 10; 
@@ -189,6 +212,12 @@ char* pid_to_string() {
 
 void checkRedirection(struct Command *list) {
 	printf("check for redirection\n");
+	/*
+	while (list != NULL) {
+		printf("%s ", list->val);
+		list = list->next;
+	}
+	*/
 }
 
 struct Command* createCommandNode(char* str) {
@@ -210,6 +239,7 @@ struct Command* createArgv(char* str) {
 	struct Command* head = NULL;
 	struct Command* cmd = NULL;
 	char* saveptr = NULL;
+
 	char* token = strtok_r(line, " ", &saveptr);
 	head = createCommandNode(token);
 	argv = head;
@@ -218,13 +248,11 @@ struct Command* createArgv(char* str) {
 		expansion_loc	= checkVarExp(token);		
 		// replace the token with the pid, converted to a string
 		if (expansion_loc != NULL){
-			pid_str = expandVariable(token, expansion_loc);
-			printf("token was: %s\n", token);
-			memset(token, '\0', strlen(token));
-			memcpy(token,pid_str, strlen(pid_str)); 
+			pid_str = expandVariable(token);
+			memset(token, '\0', strlen(token) + 1);
 			strcpy(token, pid_str);
+			free(pid_str);
 			token[strlen(token)] = '\0';
-			printf("token is now: %s\n", token);
 		} 
 		temp = head;
 		cmd = createCommandNode(token);	
