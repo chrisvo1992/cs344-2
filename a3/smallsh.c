@@ -22,14 +22,14 @@ int isValid(char*);
 struct Command* createArgv(char*);
 struct Command* createCommandNode(char*);
 int checkCmd(struct Command*);
-int processCommand(int, struct Command*);
-int runCmd(int, struct Command*);
+int processCommand(int, struct Command*, int);
+int runCmd(int, struct Command*, int);
 char* checkVarExp(char*);
 char* expandVariable(char*);
 char* pid_to_string();
 void checkRedirection(struct Command*);
 void printError();
-void createProcess(struct Command*);
+int createProcess(struct Command*, int);
 
 int main() 
 {
@@ -41,8 +41,7 @@ int main()
 		input = parseInput();	
 		if (isValid(input)) {
 			list = createArgv(input);	
-			status = processCommand(checkCmd(list), list);
-			printf("status: %d\n", status);
+			status = processCommand(checkCmd(list), list, status);
 		} else {
 			printError();
 		}	
@@ -50,12 +49,23 @@ int main()
 	return 0;
 }
 
-void createProcess(struct Command* list) {
-	printf("run background process\n");
-	while (list != NULL) {
-		printf("%s ", list->val);
-		list = list->next;
+int createProcess(struct Command* list, int stat) {
+	printf("create process\n");
+	
+	pid_t spawn = fork();	
+	int status = 0;
+
+	switch (spawn) {
+		case -1:
+			perror("fork failed");
+			status = 1;
+			exit(1);
+		break;
+		case 0:
+			status = stat + 1;
+		break;
 	}
+	return status;
 }
 
 // takes input, checks the character and argument length
@@ -92,14 +102,16 @@ int isValid(char* line) {
 	return 1;
 }
 
-int processCommand(int builtIn, struct Command* cmd) {
+// takes the command flag, argument list, and the 
+// most recent status of the last run command
+int processCommand(int builtIn, struct Command* cmd, int stat) {
 	// the command is builtin
 	if (builtIn) {
-		return runCmd(builtIn, cmd);
+		return runCmd(builtIn, cmd, stat);
 	}
 	checkRedirection(cmd);
  	// the command is not builtin
-	return runCmd(builtIn, cmd);
+	return runCmd(builtIn, cmd, stat);
 }
 
 int checkCmd(struct Command* cmd) {
@@ -116,14 +128,14 @@ int checkCmd(struct Command* cmd) {
 }
 
 // returns the exit status of non-builtin commands
-int runCmd(int type, struct Command* list) {
+int runCmd(int type, struct Command* list, int stat) {
 	char* home = getenv("HOME");
 	struct Command* head = list;
 	int status;
 
 	switch (type) {
 		case 0: 
-			createProcess(list);
+			status = createProcess(list, stat);
 		break;
 		case 1:
 			status = 0;
@@ -142,10 +154,9 @@ int runCmd(int type, struct Command* list) {
 			status = 0;
 		break;
 		case 3:
-			status = 0;
+			printf("exit value %d\n", stat);
 		break;
 		default:
-			status = 0;
 		break;
 	}
 	return status;
