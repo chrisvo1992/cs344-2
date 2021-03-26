@@ -21,30 +21,41 @@ void printShell();
 int isValid(char*);
 struct Command* createArgv(char*);
 struct Command* createCommandNode(char*);
-int isBuiltIn(struct Command*);
-void* processCommand(int, struct Command*);
-void runBuiltIn(int, struct Command*);
+int checkCmd(struct Command*);
+int processCommand(int, struct Command*);
+int runCmd(int, struct Command*);
 char* checkVarExp(char*);
 char* expandVariable(char*);
 char* pid_to_string();
 void checkRedirection(struct Command*);
 void printError();
+void createProcess(struct Command*);
 
 int main() 
 {
 	char* input = NULL;
 	struct Command* list = NULL;
+	int status;
 	while (1) {
 		printShell();	
 		input = parseInput();	
 		if (isValid(input)) {
 			list = createArgv(input);	
-			processCommand(isBuiltIn(list), list);
+			status = processCommand(checkCmd(list), list);
+			printf("status: %d\n", status);
 		} else {
 			printError();
 		}	
 	}
 	return 0;
+}
+
+void createProcess(struct Command* list) {
+	printf("run background process\n");
+	while (list != NULL) {
+		printf("%s ", list->val);
+		list = list->next;
+	}
 }
 
 // takes input, checks the character and argument length
@@ -81,16 +92,17 @@ int isValid(char* line) {
 	return 1;
 }
 
-void* processCommand(int builtIn, struct Command* cmd) {
+int processCommand(int builtIn, struct Command* cmd) {
+	// the command is builtin
 	if (builtIn) {
-		runBuiltIn(builtIn, cmd);
-		return NULL;
+		return runCmd(builtIn, cmd);
 	}
 	checkRedirection(cmd);
-	return NULL;
+ 	// the command is not builtin
+	return runCmd(builtIn, cmd);
 }
 
-int isBuiltIn(struct Command* cmd) {
+int checkCmd(struct Command* cmd) {
 	if (strcmp(cmd->val, "exit") == 0) {
 		return 1;
 	}	
@@ -103,38 +115,40 @@ int isBuiltIn(struct Command* cmd) {
 	return 0;
 }
 
-void runBuiltIn(int type, struct Command* list) {
+// returns the exit status of non-builtin commands
+int runCmd(int type, struct Command* list) {
 	char* home = getenv("HOME");
-	char* temp = NULL;
 	struct Command* head = list;
+	int status;
 
 	switch (type) {
+		case 0: 
+			createProcess(list);
+		break;
 		case 1:
-			printf("exit\n");
+			status = 0;
 			exit(0);
 		break;
 		case 2:
-			printf("%s\n", head->val);
 			if (head->next == NULL) {
 				if (chdir(home) < 0) {
 					perror("cd");
 				}
-				temp = get_current_dir_name();
-				printf("current dir: %s\n", temp);
 			} else {
 				if (chdir(head->next->val) < 0) { 
 					perror(head->next->val);
 				}
-				temp = get_current_dir_name();
-				printf("current dir: %s\n", temp);
 			}	
+			status = 0;
 		break;
 		case 3:
-			printf("status\n");
+			status = 0;
 		break;
 		default:
+			status = 0;
 		break;
 	}
+	return status;
 }
 
 // returns the location of '$$' in str found in 
@@ -212,12 +226,6 @@ char* pid_to_string() {
 
 void checkRedirection(struct Command *list) {
 	printf("check for redirection\n");
-	/*
-	while (list != NULL) {
-		printf("%s ", list->val);
-		list = list->next;
-	}
-	*/
 }
 
 struct Command* createCommandNode(char* str) {
