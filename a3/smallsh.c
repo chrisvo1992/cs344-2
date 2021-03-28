@@ -1,289 +1,244 @@
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <unistd.h>
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <signal.h>
+#include <fcntl.h>
 
-#define MAX_CHARS 2048
-#define MAX_ARGS 512
+#define MAX_NARGS      		512
+#define MAX_INPUT_LENGTH    2048
 
-struct Command {
-	char* val;
-	struct Command* next;
-};
+int bgToggle;
+int sigtstpFlag;
+int sigintFlag;
 
-char* parseInput();
-void printShell();
-int isValid(char*);
-struct Command* createArgv(char*);
-struct Command* createCommandNode(char*);
-int checkCmd(struct Command*);
-int processCommand(int, struct Command*, int);
-int runCmd(int, struct Command*, int);
-char* checkVarExp(char*);
-char* expandVariable(char*);
-char* pid_to_string();
-void checkRedirection(struct Command*);
-void printError();
-int createProcess(struct Command*, int);
+//custom handler for SIGTSTP, toggles foreground-only mode, prints text noteice, and raises signal flag
+void handle_SIGTSTP(int signo){
+	if (bgToggle == 0){
+		char* message = "\nEntering foreground-only mode (& is now ignored)\n";
+		bgToggle = 1;
+		write(STDOUT_FILENO, message, 50);
+	}
+	else{
+		char* message = "\nExiting foreground-only mode\n";
+		bgToggle = 0;
+		write(STDOUT_FILENO, message, 30);
+	}
+	sigtstpFlag = 1;
+	fflush(stdout);
+}
 
-int main() 
-{
-	char* input = NULL;
-	struct Command* list = NULL;
+void runShell(char** argList, int *nArgs) {
+	int bgFlag = 0;
 	int status;
-	while (1) {
-		printShell();	
-		input = parseInput();	
-		if (isValid(input)) {
-			list = createArgv(input);	
-			status = processCommand(checkCmd(list), list, status);
-		} else {
-			printError();
-		}	
-	}
-	return 0;
-}
+	int redirect;
+	int FD;
+	int i;
+	pid_t pid;
+	struct sigaction SIGINT_action = {0}, SIGTSTP_action = {0};
 
-int createProcess(struct Command* list, int stat) {
-	printf("create process\n");
-	
-	pid_t spawn = fork();	
-	int status = 0;
+	//ignore sigint signals
+	SIGINT_action.sa_handler = SIG_IGN;
+	sigfillset(&SIGINT_action.sa_mask);
+	SIGINT_action.sa_flags = 0;
+	sigaction(SIGINT, &SIGINT_action, NULL);
 
-	switch (spawn) {
-		case -1:
-			perror("fork failed");
-			status = 1;
-			exit(1);
-		break;
-		case 0:
-			status = stat + 1;
-		break;
-	}
-	return status;
-}
+	//custom SIGTSTP handler
+	SIGTSTP_action.sa_handler = handle_SIGTSTP;
+	sigfillset(&SIGTSTP_action.sa_mask);
+	SIGTSTP_action.sa_flags = 0;
+  	sigaction(SIGTSTP, &SIGTSTP_action, NULL);
 
-// takes input, checks the character and argument length
-// returns: a character string of values
-char* parseInput() {
-	char* lineptr = NULL;
-	size_t len = 0;
-	size_t argc = 0;
-	size_t lineCount = 0;
+	pid - getpid();
 
-	lineCount =	getline(&lineptr, &len, stdin);
-
-	if ((lineCount < MAX_CHARS)) {
-		for (int i = 0; i < strlen(lineptr); i++) {
-			if (lineptr[i] == 32) { argc++; }			
+		//check if last char is '&' and raise background flag and delete arg if true
+		if (strcmp(argList[*nArgs - 1], "&") == 0) {
+			(*nArgs)--;
+			argList[*nArgs] = NULL;
+			if (bgToggle == 0){
+				bgFlag = 1;
+				(*nArgs)++;
+			}
 		}
-		argc++;
-		if (argc <= MAX_ARGS) {
-			return lineptr;
-		}
-	}
-	return NULL;
-}
 
-// may need to redirect, or take control of,
-// stdin stdout. this is why printf is in a 
-// separate function
-void printShell() {
-	printf(": ");
-}
-
-int isValid(char* line) {
-	if (line == NULL) {return 0;}
-	return 1;
-}
-
-// takes the command flag, argument list, and the 
-// most recent status of the last run command
-int processCommand(int builtIn, struct Command* cmd, int stat) {
-	// the command is builtin
-	if (builtIn) {
-		return runCmd(builtIn, cmd, stat);
-	}
-	checkRedirection(cmd);
- 	// the command is not builtin
-	return runCmd(builtIn, cmd, stat);
-}
-
-int checkCmd(struct Command* cmd) {
-	if (strcmp(cmd->val, "exit") == 0) {
-		return 1;
-	}	
-	if (strcmp(cmd->val, "cd") == 0) {
-		return 2;
-	}	
-	if (strcmp(cmd->val, "status") == 0) {
-		return 3;
-	}	
-	return 0;
-}
-
-// returns the exit status of non-builtin commands
-int runCmd(int type, struct Command* list, int stat) {
-	char* home = getenv("HOME");
-	struct Command* head = list;
-	int status;
-
-	switch (type) {
-		case 0: 
-			status = createProcess(list, stat);
-		break;
-		case 1:
-			status = 0;
-			exit(0);
-		break;
-		case 2:
-			if (head->next == NULL) {
-				if (chdir(home) < 0) {
-					perror("cd");
-				}
-			} else {
-				if (chdir(head->next->val) < 0) { 
-					perror(head->next->val);
-				}
-			}	
-			status = 0;
-		break;
-		case 3:
-			printf("exit value %d\n", stat);
-		break;
-		default:
-		break;
-	}
-	return status;
-}
-
-// returns the location of '$$' in str found in 
-// the list of command line arguments
-char* checkVarExp(char* str) {
-	char* s = strstr(str, "$$");
-	if (s) {
-		return s;
-	}	
-	return NULL;	
-}
-
-// concats the strings preceding and following the '$$'
-// found in tkn
-char* expandVariable(char* tkn) {
-	int len = 0;	
-	int i = 0;
-	char c = tkn[len];
-	char* str1 = NULL;
-	char* str2 = NULL;
-	char* pid = pid_to_string();
-	char* str = NULL;
-	while (c != '$') {
-		len++;
-		c = tkn[len];	
-	}
-	str1 = calloc(len + 1, sizeof(char));
-	str2 = calloc(strlen(tkn) + 1, sizeof(char));
-	strncpy(str1, tkn, len);
-
-	// get the string following '$$'
-	len += 2;
-	while (len < strlen(tkn)) {
-		str2[i] = tkn[len];
-		i++;
-		len++;	
-	}
-	str2[i] = '\0';
-
-	// concat all three strings
-	str = calloc(strlen(str1) + 
-											strlen(str2) + 
-											strlen(pid) + 1, sizeof(char));	
-	strcat(str, str1);
-	strcat(str, pid);
-	strcat(str, str2);
-	str[strlen(str)] = '\0';
-	
-	free(str1);
-	free(pid);
-	free(str2);
-	return str;
-}
-
-// converts a current pid to a string
-char* pid_to_string() {
-	char* str = NULL; 
-	pid_t pid = getpid();
-	size_t digit = pid, rem = 0, num = digit, len = 0;
-
-	if (pid > 0) {
-		while (digit != 0) {
-			len++;
-			digit /= 10;
-		}
-		str = calloc(len + 1, sizeof(char));
-		for (int i = 0; i < len; i++) {
-			rem = num % 10;
-			num = num / 10; 
-			str[len - (i + 1)] = rem + '0';	
-		}
-	}
-	return str;
-}
-
-void checkRedirection(struct Command *list) {
-	printf("check for redirection\n");
-}
-
-struct Command* createCommandNode(char* str) {
-	struct Command* newCmd = (struct Command*)malloc(sizeof(struct Command));
-	newCmd->val = calloc(strlen(str) + 1, sizeof(char));
-	strcpy(newCmd->val, str);
-	newCmd->next = NULL;
-	return newCmd;
-}
-
-struct Command* createArgv(char* str) {
-	char* expansion_loc;
-	char* pid_str = NULL;
-	char* line = calloc(strlen(str) + 1, sizeof(char));
-	strcpy(line, str);
-	line[strlen(line)-1] = '\0';
-	struct Command* argv = NULL;
-	struct Command* temp = NULL;
-	struct Command* head = NULL;
-	struct Command* cmd = NULL;
-	char* saveptr = NULL;
-
-	char* token = strtok_r(line, " ", &saveptr);
-	head = createCommandNode(token);
-	argv = head;
-	token = strtok_r(NULL, " ", &saveptr);
-	while (token) {
-		expansion_loc	= checkVarExp(token);		
-		// replace the token with the pid, converted to a string
-		if (expansion_loc != NULL){
-			pid_str = expandVariable(token);
-			memset(token, '\0', strlen(token) + 1);
-			strcpy(token, pid_str);
-			free(pid_str);
-			token[strlen(token)] = '\0';
+		//if exit command
+		if (strcmp(argList[0], "exit") == 0) {
+			fflush(stdout);
+			while (1){
+				exit(0);
+			}
 		} 
-		temp = head;
-		cmd = createCommandNode(token);	
-		temp->next = cmd;
-		head = cmd;
-		cmd = NULL;
-		token = strtok_r(NULL, " ", &saveptr);
-	}
-	head->next = NULL;
-	return argv;
+
+		//if change directory command
+		else if (strcmp(argList[0], "cd") == 0) {
+			if (*nArgs == 1)
+				chdir(getenv("HOME"));
+			else
+				chdir(argList[1]);
+		}
+
+		//if status command
+		else if (strcmp(argList[0], "status") == 0){
+			if (WIFEXITED(status)){
+				printf("exit value %d\n", WEXITSTATUS(status));
+			}
+			else if (WIFSIGNALED(status)){
+				printf("terminated by signal %d\n", WTERMSIG(status));
+			}
+		}
+		
+		else{
+			//for all other commands, spawn child
+			pid = fork();
+			switch (pid){
+				case -1:
+					perror("fork() failed\n");
+					exit(1);
+					break;
+				case 0: //child stuff
+					//custom sa handler for foreground
+					if (bgFlag == 0){
+						SIGINT_action.sa_handler = SIG_DFL;
+						sigaction(SIGINT, &SIGINT_action, NULL);
+					}
+					
+					for (i = 1; i < *nArgs; i++) {
+						//if file not specified, pass io to /dev/null
+						if (bgFlag == 1) {	
+							redirect = 1;
+							FD = open("/dev/null", O_RDONLY);
+							int result = dup2(FD, STDIN_FILENO);
+							if (result == -1) { 
+								perror("source open()"); 
+								exit(1); 
+							}
+						}
+						// input file direction
+						if ((strcmp(argList[i], "<") == 0)) {
+							redirect = 1;
+							
+							FD = open(argList[i + 1], O_RDONLY);
+							int result = dup2(FD, STDIN_FILENO);
+							if (result == -1) { 
+								perror("source open()"); 
+								exit(1); 
+							}
+						}
+						// output file direction
+						if ((strcmp(argList[i], ">") == 0))  {
+							redirect = 1;
+							FD = open(argList[i + 1], O_CREAT | O_RDWR | O_TRUNC, 0644);
+							int result = dup2(FD, STDOUT_FILENO); //should have made a function for all this repeated code 
+							if (result == -1){
+								perror("source open()"); 
+								exit(1); 
+							}
+						}
+					}
+					//truncate arguments in preperation for exec and close FD
+					if (redirect == 1){
+						close(FD);
+						for(i = 1; i < *nArgs; i++)
+							argList[i] = NULL;
+					}
+
+					//pass trunceted arguments to execvp
+					if (execvp(argList[0], argList) && sigtstpFlag != 1 && sigintFlag != 1){
+						fprintf(stderr, "I do not understand %s\n", argList[0]);
+						exit(1);
+					}
+					break;
+
+				default: //parent stuff
+					if (bgFlag == 1){
+						printf("background pid is %d\n", pid);
+					}
+					else { 
+						//wait for child to terminate
+						waitpid(pid, &status, 0);
+						if(sigtstpFlag != 1){
+							//check that child is dead
+							if (WIFSIGNALED(status) == 1 && WTERMSIG(status) != 0){
+								printf("terminated by signal %d\n", WTERMSIG(status));
+							}
+							while (pid != -1){
+								//re-fetch pid
+								pid = waitpid(-1, &status, WNOHANG);	
+								//print after results killed
+								if (WIFEXITED(status) != 0 && pid > 0){
+									printf("background pid %d is done: exit value %d\n", pid, WEXITSTATUS(status));
+								}
+								else if (WIFSIGNALED(status) != 0 && pid > 0 && bgToggle == 0){
+									printf("background pid %d is done: terminated by signal %d\n", pid, WTERMSIG(status));
+								}
+							}
+						}
+					}
+				
+				break;
+			}
+		}
+
 }
 
-void printError() {
-	printf("Too many characters/arguments\n");
+// fetches arguments from user input, parses into list and tallys, 
+void getCommand(char** argList, int *nArgs) {
+	char inBuff[MAX_INPUT_LENGTH];
+	int i;
+	char* argKey;
+	char pid[12];
+
+	do {
+		printf(": ");
+		fgets(inBuff, MAX_INPUT_LENGTH, stdin);
+		strtok(inBuff, "\n"); // get rid of newline from fgets
+	} while(inBuff[0] == '#'|| strlen(inBuff) < 1);
+
+	//expand $$ to pid of shell
+    for (i = 0; i < strlen(inBuff); i ++) {
+		// swapping $$ for %d so we can sprintf pid in
+		if ( (inBuff[i] == '$')  && (inBuff[i + 1] == '$') && (i + 1 < strlen(inBuff))) {
+			char * temp = strdup(inBuff);
+			temp[i] = '%';
+			temp[i + 1] = 'd';
+			sprintf(inBuff, temp, getpid());
+			free(temp);
+		}
+	}
+
+	// Parse user input into array of arguments
+	argKey = strtok(inBuff, " ");	
+	while(argKey != NULL) {
+		argList[*nArgs] = strdup(argKey);
+		(*nArgs)++;
+		argKey = strtok(NULL, " ");
+	}
+}
+
+int main() {
+	int nArgs;
+	char* argList[MAX_NARGS];
+	bgToggle = 0;
+
+	while (1) {
+		//reset inputs
+		nArgs = 0;
+		sigtstpFlag = 0;
+		sigintFlag = 0;
+		memset(argList, '\0', MAX_NARGS);
+		fflush(stdout);
+		fflush(stdin);
+
+		// Prompt user command
+		getCommand(argList, &nArgs);
+		// Execute command
+		runShell(argList, &nArgs);
+	}
+	
+	return 0;
 }
